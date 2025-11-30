@@ -10,57 +10,67 @@ const io = socketIo(server);
 app.use(express.static(__dirname));
 app.use(express.static('public'));
 
-// --- CONFIGURAÇÃO DAS 3 PROMOÇÕES ---
+// --- CONFIGURAÇÃO AVANÇADA (COM BANCO DE DADOS & INTELIGÊNCIA) ---
 let campanhas = [
-    // SLIDE 1: VOUCHER DOURADO - 50% COMBUSTÍVEL
+    // SLIDE 0: Café + Salgado (Laranja)
     { 
         id: 0, 
         tipo: 'foto', 
         arquivo: "slide1.jpg", 
-        nome: "Combustível 50% OFF", 
-        qtd: 5, // Pouca quantidade pois é valioso
-        totalResgates: 0,
+        nome: "Café + Salgado", 
+        qtd: 20, 
         ativa: true, 
-        corPrincipal: '#FFD700', // Dourado Ouro
-        corSecundaria: '#003399', // Azul Ipiranga
-        prefixo: 'GOLD' 
+        corPrincipal: '#F37021', // Laranja AMPM
+        corSecundaria: '#663300', 
+        prefixo: 'CAFE',
+        // DADOS DE INTELIGÊNCIA
+        totalResgates: 0,
+        resgatesPorHora: new Array(24).fill(0),
+        ultimoCupom: "Nenhum",
+        ultimaHora: "--:--"
     },
-    // SLIDE 2: DUCHA GRÁTIS (Azul)
+    // SLIDE 1: Bebidas (Azul)
     { 
         id: 1, 
         tipo: 'foto', 
         arquivo: "slide2.jpg", 
-        nome: "Ducha Grátis",   
-        qtd: 20, 
-        totalResgates: 0,
+        nome: "Bebidas Geladas",   
+        qtd: 30, 
         ativa: true, 
         corPrincipal: '#003399', // Azul Escuro
-        corSecundaria: '#0099ff', // Azul Claro
-        prefixo: 'DUCHA' 
+        corSecundaria: '#0055aa', 
+        prefixo: 'BEBIDA',
+        totalResgates: 0,
+        resgatesPorHora: new Array(24).fill(0),
+        ultimoCupom: "Nenhum",
+        ultimaHora: "--:--"
     },
-    // SLIDE 3: CAFÉ EXPRESSO GRÁTIS (Laranja)
+    // SLIDE 2: Posto Ipiranga (Amarelo)
     { 
         id: 2, 
         tipo: 'foto', 
         arquivo: "slide3.jpg", 
-        nome: "Café Expresso Grátis",        
-        qtd: 30, 
-        totalResgates: 0,
+        nome: "Abasteça com Desconto",        
+        qtd: 10, 
         ativa: true, 
-        corPrincipal: '#F37021', // Laranja AMPM
-        corSecundaria: '#663300', // Marrom Café
-        prefixo: 'CAFE' 
+        corPrincipal: '#FFCC00', // Amarelo Ipiranga
+        corSecundaria: '#003399', 
+        prefixo: 'POSTO',
+        totalResgates: 0,
+        resgatesPorHora: new Array(24).fill(0),
+        ultimoCupom: "Nenhum",
+        ultimaHora: "--:--"
     }
 ];
 
 let slideAtual = 0;
 
-// --- ROTAÇÃO (20 SEGUNDOS) ---
+// --- ROTAÇÃO AUTOMÁTICA (15 SEGUNDOS) ---
 setInterval(() => {
     slideAtual++;
     if (slideAtual >= campanhas.length) slideAtual = 0;
     io.emit('trocar_slide', campanhas[slideAtual]);
-}, 20000);
+}, 15000);
 
 function gerarCodigo(prefixo) {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -69,11 +79,25 @@ function gerarCodigo(prefixo) {
     return `${prefixo}-${result}`;
 }
 
+// --- FUNÇÃO PARA CALCULAR O PICO ---
+function getHoraPico(arrayHoras) {
+    let max = 0;
+    let hora = 0;
+    for(let i=0; i<24; i++) {
+        if(arrayHoras[i] > max) {
+            max = arrayHoras[i];
+            hora = i;
+        }
+    }
+    if (max === 0) return "Sem dados";
+    return `${hora}:00h (${max} un)`;
+}
+
 // --- HTML DA TV ---
 const htmlTV = `
 <!DOCTYPE html>
 <html>
-<head><title>TV Promo</title></head>
+<head><title>TV AMPM</title></head>
 <body style="margin:0; background:black; overflow:hidden; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.5s;">
     <div style="display:flex; height:100vh;">
         <div style="flex:3; background:#ccc; display:flex; align-items:center; justify-content:center; overflow:hidden;" id="bgEsq">
@@ -111,10 +135,9 @@ const htmlTV = `
             document.getElementById('bgEsq').style.background = d.corSecundaria;
             
             // Texto Escuro se o fundo for Dourado/Amarelo, senão Branco
-            const corTexto = (d.corPrincipal === '#FFD700' || d.corPrincipal === '#FFCC00') ? '#003399' : 'white';
-            document.getElementById('bgDir').style.color = corTexto;
-            document.getElementById('num').style.color = (d.corPrincipal === '#FFD700') ? '#003399' : '#FFCC00';
-
+            const corTexto = (d.corPrincipal === '#FFCC00' || d.corPrincipal === '#FFD700') ? '#003399' : '#FFCC00';
+            document.getElementById('num').style.color = corTexto;
+            
             if (d.tipo === 'video') {
                 imgTag.style.display = 'none'; vidTag.style.display = 'block'; vidTag.src = d.arquivo; vidTag.play().catch(e => console.log(e));
             } else {
@@ -168,7 +191,7 @@ const htmlMobile = `
                     <p style="font-size:10px; margin:0; color:#999; text-transform:uppercase;">Código de Autorização</p>
                     <div class="codigo-texto" id="codGerado">...</div>
                 </div>
-                <p style="font-size:12px; color:#555;">Emitido em: <span id="dataHora" style="font-weight:bold;"></span><br><span style="color:#F37021; font-weight:bold;">Válido apenas hoje.</span></p>
+                <p style="font-size:12px; color:#555;">Emitido em: <span id="dataHora" style="font-weight:bold;"></span><br><span style="color:#F37021; font-weight:bold;">Válido apenas hoje nesta unidade.</span></p>
             </div>
             <div class="serrilhado"></div>
         </div>
@@ -188,7 +211,7 @@ const htmlMobile = `
             
             // Botão muda de cor e texto se for claro
             document.getElementById('btnResgatar').style.background = d.corPrincipal;
-            if(d.corPrincipal === '#FFD700') {
+            if(d.corPrincipal === '#FFD700' || d.corPrincipal === '#FFCC00') {
                  document.getElementById('btnResgatar').style.color = '#003399';
             } else {
                  document.getElementById('btnResgatar').style.color = 'white';
@@ -203,6 +226,7 @@ const htmlMobile = `
             document.getElementById('codGerado').innerText = dados.codigo;
             const agora = new Date();
             document.getElementById('dataHora').innerText = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            
             document.getElementById('ticketContainer').style.borderTopColor = dados.corPrincipal;
             document.getElementById('codGerado').style.color = dados.corPrincipal;
             document.getElementById('codBox').style.borderColor = dados.corPrincipal;
@@ -212,10 +236,12 @@ const htmlMobile = `
 </html>
 `;
 
-// --- ADMIN ---
+// --- ADMIN COMPLETO (COM RELATÓRIO E BANCO DE DADOS) ---
 const htmlAdmin = `
 <!DOCTYPE html><html><meta name="viewport" content="width=device-width, initial-scale=1"><body style="font-family:Arial; padding:20px; background:#222; color:white;">
-<h1>🎛️ Controle Ipiranga/AMPM</h1><div id="paineis"></div><script src="/socket.io/socket.io.js"></script><script>const socket=io();socket.on('dados_admin',(lista)=>{const div=document.getElementById('paineis');div.innerHTML="";lista.forEach((c,index)=>{div.innerHTML+=\`<div style="background:#444; padding:15px; margin-bottom:15px; border-radius:10px; border-left: 8px solid \${c.ativa?'#0f0':'#f00'}"><h3 style="margin-top:0; color:white;">\${c.nome}</h3><div style="display:flex; gap:20px; align-items:center; background:#333; padding:10px; border-radius:5px;"><div><label>Estoque:</label><br><input id="qtd_\${index}" type="number" value="\${c.qtd}" style="width:60px; font-weight:bold;"></div><div style="border-left:1px solid #666; padding-left:20px;"><label style="color:#00ff00;">📈 JÁ PEGARAM:</label><br><span style="font-size:24px; font-weight:bold;">\${c.totalResgates}</span></div></div><div style="margin-top:10px;"><button onclick="salvar(\${index})" style="padding:8px 15px; background:#F37021; color:white; border:none; border-radius:5px; cursor:pointer;">💾 ATUALIZAR</button></div></div>\`});});function salvar(id){const q=document.getElementById('qtd_'+id).value;socket.emit('admin_update',{id:id,qtd:q});alert('Atualizado!');}</script></body></html>
+<h1>🎛️ Controle & Inteligência AMPM</h1><div id="paineis"></div><script src="/socket.io/socket.io.js"></script><script>const socket=io();socket.on('dados_admin',(lista)=>{const div=document.getElementById('paineis');div.innerHTML="";lista.forEach((c,index)=>{
+let max=0;let hora=0;c.resgatesPorHora.forEach((q,h)=>{if(q>max){max=q;hora=h;}});const pico=max>0?hora+":00h ("+max+" un)":"Sem dados";
+div.innerHTML+=\`<div style="background:#444; padding:15px; margin-bottom:15px; border-radius:10px; border-left: 8px solid \${c.ativa?'#0f0':'#f00'}"><h3 style="margin-top:0;">\${c.nome}</h3><div style="display:flex; gap:10px; align-items:center; background:#333; padding:10px; border-radius:5px; margin-bottom:10px;"><label>Estoque:</label><input id="qtd_\${index}" type="number" value="\${c.qtd}" style="width:60px; font-weight:bold;"><button onclick="salvar(\${index})" style="padding:5px 10px; background:#00cc00; color:white; border:none; cursor:pointer;">💾 Salvar</button></div><div style="background:#222; padding:10px; border-radius:5px; font-size:14px; color:#ccc;"><p style="margin:5px 0;">📈 <b>Total Resgatado:</b> <span style="color:#00ff00; font-size:18px;">\${c.totalResgates}</span></p><p style="margin:5px 0;">⏰ <b>Horário de Pico:</b> \${pico}</p><p style="margin:5px 0; border-top:1px solid #555; padding-top:5px;">🔍 <b>Último:</b> <span style="color:yellow;">\${c.ultimoCupom}</span> <small>(\${c.ultimaHora})</small></p></div></div>\`});});function salvar(id){const q=document.getElementById('qtd_'+id).value;socket.emit('admin_update',{id:id,qtd:q});alert('Atualizado!');}</script></body></html>
 `;
 
 // --- ROTAS ---
@@ -229,34 +255,42 @@ app.get('/qrcode', (req, res) => { const url = `${req.headers['x-forwarded-proto
 io.on('connection', (socket) => {
     socket.emit('trocar_slide', campanhas[slideAtual]);
     socket.emit('dados_admin', campanhas);
-    
     socket.on('pedir_atualizacao', () => { socket.emit('trocar_slide', campanhas[slideAtual]); });
     
     socket.on('resgatar_oferta', (id) => {
         let camp = campanhas[id];
         if (camp && camp.qtd > 0) {
             camp.qtd--;
+            
+            // INTELIGÊNCIA DE DADOS
             camp.totalResgates++;
+            const agora = new Date();
+            const horaAtual = agora.getHours();
+            if(horaAtual >= 0 && horaAtual <= 23) camp.resgatesPorHora[horaAtual]++;
+            camp.ultimoCupom = gerarCodigo(camp.prefixo);
+            camp.ultimaHora = agora.toLocaleTimeString('pt-BR');
+
             io.emit('atualizar_qtd', camp);
             if(slideAtual === id) io.emit('trocar_slide', camp);
             
-            // Sorteio: Se for o Cupom Dourado, tem chance de ser "Tanque Cheio" ou outro prêmio
-            // Mas aqui vamos manter o padrão 50% ou o nome que você definiu
+            // Sorteio
             const sorte = Math.floor(Math.random() * 100) + 1;
             let cor1 = camp.corPrincipal; let cor2 = camp.corSecundaria; let nomeFinal = camp.nome;
             let isGold = false;
 
-            if (sorte > 95) { // 5% de chance de ser SUPER PREMIADO
-                cor1 = '#FFD700'; cor2 = '#DAA520'; nomeFinal = `🌟 SUPER ${camp.nome} 🌟`;
+            if (sorte > 90) { 
+                isGold = true;
+                cor1 = '#FFD700'; cor2 = '#DAA520'; nomeFinal = `🌟 ${camp.nome} (SUPER OFERTA)`;
             }
 
             socket.emit('sucesso', { 
-                codigo: gerarCodigo(camp.prefixo), 
+                codigo: camp.ultimoCupom, 
                 produto: nomeFinal,
                 corPrincipal: cor1,
                 corSecundaria: cor2,
                 isGold: isGold
             });
+            
             io.emit('dados_admin', campanhas);
         }
     });
@@ -270,4 +304,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
+server.listen(PORT, () => console.log(`AMPM rodando na porta ${PORT}`));
