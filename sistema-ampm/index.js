@@ -10,57 +10,54 @@ const io = socketIo(server);
 app.use(express.static(__dirname));
 app.use(express.static('public'));
 
-// --- CONFIGURAÇÃO DAS PROMOÇÕES ---
+// --- CONFIGURAÇÃO DAS OFERTAS ---
 let campanhas = [
-    // SLIDE 1: COMBUSTÍVEL (A SORTE GRANDE)
+    // SLIDE 0: Café + Salgado (Laranja)
     { 
         id: 0, 
         tipo: 'foto', 
         arquivo: "slide1.jpg", 
-        nome: "Sorteio Combustível", 
-        qtd: 5, // Poucos cupons dourados no estoque
-        totalResgates: 0,
-        ativa: true, 
-        corPrincipal: '#FFCC00', // Amarelo Ipiranga (Padrão)
-        corSecundaria: '#003399', // Azul
-        prefixo: 'IPIRANGA' 
-    },
-    // SLIDE 2: DUCHA GRÁTIS (Garantido)
-    { 
-        id: 1, 
-        tipo: 'foto', 
-        arquivo: "slide2.jpg", 
-        nome: "Ducha Grátis",   
-        qtd: 50, 
-        totalResgates: 0,
-        ativa: true, 
-        corPrincipal: '#003399', // Azul Escuro
-        corSecundaria: '#0099ff', // Azul Claro
-        prefixo: 'DUCHA' 
-    },
-    // SLIDE 3: CAFÉ EXPRESSO GRÁTIS (Garantido)
-    { 
-        id: 2, 
-        tipo: 'foto', 
-        arquivo: "slide3.jpg", 
-        nome: "Café Expresso Grátis",        
-        qtd: 50, 
-        totalResgates: 0,
+        nome: "Café + Salgado", 
+        qtd: 20, 
         ativa: true, 
         corPrincipal: '#F37021', // Laranja AMPM
         corSecundaria: '#663300', // Marrom Café
         prefixo: 'CAFE' 
+    },
+    // SLIDE 1: Bebidas (Azul)
+    { 
+        id: 1, 
+        tipo: 'foto', 
+        arquivo: "slide2.jpg", 
+        nome: "Bebidas Geladas",   
+        qtd: 30, 
+        ativa: true, 
+        corPrincipal: '#003399', // Azul Escuro
+        corSecundaria: '#0055aa', // Azul Claro
+        prefixo: 'BEBIDA' 
+    },
+    // SLIDE 2: Posto Ipiranga (Amarelo)
+    { 
+        id: 2, 
+        tipo: 'foto', 
+        arquivo: "slide3.jpg", 
+        nome: "Abasteça com Desconto",        
+        qtd: 10, 
+        ativa: true, 
+        corPrincipal: '#FFCC00', // Amarelo Ipiranga
+        corSecundaria: '#003399', // Azul Ipiranga
+        prefixo: 'POSTO' 
     }
 ];
 
 let slideAtual = 0;
 
-// --- ROTAÇÃO (20 SEGUNDOS) ---
+// --- ROTAÇÃO AUTOMÁTICA ---
 setInterval(() => {
     slideAtual++;
     if (slideAtual >= campanhas.length) slideAtual = 0;
     io.emit('trocar_slide', campanhas[slideAtual]);
-}, 20000);
+}, 15000);
 
 function gerarCodigo(prefixo) {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -86,9 +83,8 @@ const htmlTV = `
             <div style="background:white; padding:10px; border-radius:10px; margin-top:20px;">
                 <img id="qr" src="qrcode.png" style="width:200px; display:block;" onerror="this.onerror=null; fetch('/qrcode').then(r=>r.text()).then(u=>this.src=u);">
             </div>
-            <p style="margin-top:10px; font-weight:bold; font-size:1.2rem; color:#FFCC00;" id="txtScan">ESCANEIE PARA GANHAR</p>
-            
-            <div id="boxNum" style="margin-top:30px; border-top:2px dashed rgba(255,255,255,0.3); width:80%; padding-top:20px;">
+            <p style="margin-top:10px; font-weight:bold; font-size:1.2rem; color:#FFCC00;">ESCANEIE PARA GANHAR</p>
+            <div style="margin-top:30px; border-top:2px dashed rgba(255,255,255,0.3); width:80%; padding-top:20px;">
                 <span style="font-size:1.2rem; font-weight:bold;">RESTAM APENAS:</span><br>
                 <span id="num" style="font-size:6rem; color:#FFCC00; font-weight:900; line-height:1;">--</span>
             </div>
@@ -108,26 +104,13 @@ const htmlTV = `
         function actualizarTela(d) {
             document.getElementById('nomeProd').innerText = d.nome;
             document.getElementById('num').innerText = d.qtd;
-            
-            // Cores
             document.getElementById('bgDir').style.background = d.corPrincipal;
             document.getElementById('bgEsq').style.background = d.corSecundaria;
             const corTexto = (d.corPrincipal === '#FFD700' || d.corPrincipal === '#FFCC00') ? '#003399' : '#FFCC00';
             const corFundoTexto = (d.corPrincipal === '#FFD700' || d.corPrincipal === '#FFCC00') ? '#003399' : 'white';
-            
             document.getElementById('bgDir').style.color = corFundoTexto;
             document.getElementById('num').style.color = corTexto;
-            document.getElementById('txtScan').style.color = corTexto;
-
-            // Se for sorteio de combustivel, esconde o numero "Restam" pra dar misterio
-            if(d.id === 0) {
-                document.getElementById('boxNum').style.display = 'none';
-                document.getElementById('txtScan').innerText = "TENTE A SORTE!";
-            } else {
-                document.getElementById('boxNum').style.display = 'block';
-                document.getElementById('txtScan').innerText = "ESCANEIE E GANHE";
-            }
-
+            
             if (d.tipo === 'video') {
                 imgTag.style.display = 'none'; vidTag.style.display = 'block'; vidTag.src = d.arquivo; vidTag.play().catch(e => console.log(e));
             } else {
@@ -139,13 +122,13 @@ const htmlTV = `
 </html>
 `;
 
-// --- HTML MOBILE ---
+// --- HTML MOBILE (COM TRAVA DE SEGURANÇA E MEMÓRIA) ---
 const htmlMobile = `
 <!DOCTYPE html>
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:center; padding:20px; background:#f0f2f5; margin:0; transition: background 0.3s; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:center; padding:20px; background:#f0f2f5; margin:0; }
     .btn-pegar { width:100%; padding:20px; color:white; border:none; border-radius:10px; font-size:20px; margin-top:20px; font-weight:bold; text-transform:uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.2s; }
     .btn-pegar:active { transform: scale(0.98); }
     .img-prod { width:100%; max-width:300px; border-radius:10px; margin-bottom:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -165,10 +148,14 @@ const htmlMobile = `
         <img id="fotoM" src="" class="midia-prod" style="display:none;">
         <video id="vidM" src="" class="midia-prod" style="display:none;" muted playsinline autoplay loop></video>
         <h2 id="nomeM" style="color:#003399; margin:10px 0; font-weight:800;">...</h2>
-        <button onclick="resgatar()" id="btnResgatar" class="btn-pegar">RESGATAR / TENTAR A SORTE</button>
+        <div style="background:white; padding:15px; border-radius:8px; display:inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <span style="color:#666; font-size:12px;">ESTOQUE</span><br><strong id="qtdM" style="font-size:24px; color:#333;">--</strong>
+        </div>
+        <button onclick="resgatar()" id="btnResgatar" class="btn-pegar">RESGATAR CUPOM</button>
     </div>
+
     <div id="telaVoucher" style="display:none;">
-        <h2 class="no-print" style="color:#003399;" id="msgSucesso">SUCESSO! 🎉</h2>
+        <h2 class="no-print" style="color:#003399;">SEU CUPOM DE HOJE 🎉</h2>
         <div class="ticket-paper" id="ticketContainer">
             <div class="ticket-body">
                 <img src="logo.png" width="100" style="margin-bottom:15px;" onerror="this.style.display='none'">
@@ -183,45 +170,82 @@ const htmlMobile = `
             <div class="serrilhado"></div>
         </div>
         <button onclick="window.print()" class="btn-pegar no-print" style="background:#333; margin-top:30px;">🖨️ IMPRIMIR / SALVAR</button>
+        <p class="no-print" style="font-size:11px; color:gray; margin-top:15px;">⚠️ Você já garantiu um cupom hoje. Volte amanhã para mais!</p>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let ofertaAtual = null;
+
+        // --- SISTEMA DE MEMÓRIA (ANTI-FRAUDE) ---
+        // Verifica se já tem cupom salvo no navegador
+        const cupomSalvo = localStorage.getItem('cupom_ampm_hoje');
+        const dataSalva = localStorage.getItem('data_cupom_ampm');
+        const hoje = new Date().toLocaleDateString('pt-BR');
+
+        // Se tiver cupom salvo E for da data de hoje, mostra ele direto e bloqueia o resto
+        if (cupomSalvo && dataSalva === hoje) {
+            const dadosSalvos = JSON.parse(cupomSalvo);
+            exibirVoucher(dadosSalvos);
+        }
+
         socket.on('trocar_slide', (d) => {
-            ofertaAtual = d;
-            const imgTag = document.getElementById('fotoM'); const vidTag = document.getElementById('vidM');
-            if (d.tipo === 'video') { imgTag.style.display = 'none'; vidTag.style.display = 'block'; vidTag.src = d.arquivo; } 
-            else { vidTag.style.display = 'none'; imgTag.style.display = 'block'; imgTag.src = d.arquivo; }
-            document.getElementById('nomeM').innerText = d.nome;
-            document.getElementById('btnResgatar').style.background = d.corPrincipal;
-            if(d.corPrincipal === '#FFCC00' || d.corPrincipal === '#FFD700') {
-                 document.getElementById('btnResgatar').style.color = '#003399';
-                 document.getElementById('btnResgatar').innerText = "TENTAR A SORTE (50%)";
-            } else {
-                 document.getElementById('btnResgatar').style.color = 'white';
-                 document.getElementById('btnResgatar').innerText = "GARANTIR AGORA";
+            // Só atualiza a tela de pegar se o usuário NÃO tiver cupom
+            if (!document.getElementById('telaVoucher').style.display || document.getElementById('telaVoucher').style.display === 'none') {
+                ofertaAtual = d;
+                const imgTag = document.getElementById('fotoM'); const vidTag = document.getElementById('vidM');
+                if (d.tipo === 'video') { imgTag.style.display = 'none'; vidTag.style.display = 'block'; vidTag.src = d.arquivo; } 
+                else { vidTag.style.display = 'none'; imgTag.style.display = 'block'; imgTag.src = d.arquivo; }
+                document.getElementById('nomeM').innerText = d.nome;
+                document.getElementById('qtdM').innerText = d.qtd;
+                document.getElementById('btnResgatar').style.background = d.corPrincipal;
+                if(d.corPrincipal === '#FFCC00' || d.corPrincipal === '#FFD700') {
+                     document.getElementById('btnResgatar').style.color = '#003399';
+                     document.getElementById('btnResgatar').innerText = "TENTAR A SORTE (50%)";
+                } else {
+                     document.getElementById('btnResgatar').style.color = 'white';
+                     document.getElementById('btnResgatar').innerText = "GARANTIR AGORA";
+                }
             }
         });
+
         socket.emit('pedir_atualizacao');
-        function resgatar() { if(ofertaAtual) socket.emit('resgatar_oferta', ofertaAtual.id); }
+
+        function resgatar() { 
+            if(ofertaAtual) socket.emit('resgatar_oferta', ofertaAtual.id); 
+        }
+
         socket.on('sucesso', (dados) => {
+            // Salva na memória do celular
+            const agora = new Date();
+            const dataHoraFormatada = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            
+            // Adiciona a hora formatada aos dados para salvar
+            dados.horaFormatada = dataHoraFormatada;
+            
+            localStorage.setItem('cupom_ampm_hoje', JSON.stringify(dados));
+            localStorage.setItem('data_cupom_ampm', agora.toLocaleDateString('pt-BR'));
+
+            exibirVoucher(dados);
+        });
+
+        function exibirVoucher(dados) {
             document.getElementById('telaPegar').style.display='none';
             document.getElementById('telaVoucher').style.display='block';
+            
             document.getElementById('voucherNome').innerText = dados.produto;
             document.getElementById('codGerado').innerText = dados.codigo;
-            const agora = new Date();
-            document.getElementById('dataHora').innerText = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('dataHora').innerText = dados.horaFormatada || "Hoje"; // Pega da memória ou do live
             
             document.getElementById('ticketContainer').style.borderTopColor = dados.corPrincipal;
             document.getElementById('codGerado').style.color = dados.corPrincipal;
             document.getElementById('codBox').style.borderColor = dados.corPrincipal;
             
             if(dados.isGold) {
-                document.getElementById('msgSucesso').innerText = "🌟 VOCÊ TIROU A SORTE GRANDE! 🌟";
                 document.body.style.backgroundColor = "#FFD700";
             }
-        });
+        }
     </script>
 </body>
 </html>
@@ -230,7 +254,7 @@ const htmlMobile = `
 // --- ADMIN ---
 const htmlAdmin = `
 <!DOCTYPE html><html><meta name="viewport" content="width=device-width, initial-scale=1"><body style="font-family:Arial; padding:20px; background:#222; color:white;">
-<h1>🎛️ Controle AMPM</h1><div id="paineis"></div><script src="/socket.io/socket.io.js"></script><script>const socket=io();socket.on('dados_admin',(lista)=>{const div=document.getElementById('paineis');div.innerHTML="";lista.forEach((c,index)=>{div.innerHTML+=\`<div style="background:#444; padding:15px; margin-bottom:15px; border-radius:10px; border-left: 8px solid \${c.ativa?'#0f0':'#f00'}"><h3 style="margin-top:0; color:white;">\${c.nome}</h3><div style="display:flex; gap:20px; align-items:center; background:#333; padding:10px; border-radius:5px;"><div><label>Estoque (Gold):</label><br><input id="qtd_\${index}" type="number" value="\${c.qtd}" style="width:60px; font-weight:bold;"></div><div style="border-left:1px solid #666; padding-left:20px;"><label style="color:#00ff00;">📈 JÁ PEGARAM:</label><br><span style="font-size:24px; font-weight:bold;">\${c.totalResgates}</span></div></div><div style="margin-top:10px;"><button onclick="salvar(\${index})" style="padding:8px 15px; background:#F37021; color:white; border:none; border-radius:5px; cursor:pointer;">💾 ATUALIZAR</button></div></div>\`});});function salvar(id){const q=document.getElementById('qtd_'+id).value;socket.emit('admin_update',{id:id,qtd:q});alert('Atualizado!');}</script></body></html>
+<h1>🎛️ Controle AMPM</h1><div id="paineis"></div><script src="/socket.io/socket.io.js"></script><script>const socket=io();socket.on('dados_admin',(lista)=>{const div=document.getElementById('paineis');div.innerHTML="";lista.forEach((c,index)=>{div.innerHTML+=\`<div style="background:#444; padding:15px; margin-bottom:15px; border-radius:10px; border-left: 8px solid \${c.ativa?'#0f0':'#f00'}"><h3 style="margin-top:0; color:white;">\${c.nome}</h3><div style="display:flex; gap:20px; align-items:center; background:#333; padding:10px; border-radius:5px;"><div><label>Estoque:</label><br><input id="qtd_\${index}" type="number" value="\${c.qtd}" style="width:60px; font-weight:bold;"></div><div style="border-left:1px solid #666; padding-left:20px;"><label style="color:#00ff00;">📈 JÁ PEGARAM:</label><br><span style="font-size:24px; font-weight:bold;">\${c.totalResgates}</span></div></div><div style="margin-top:10px;"><button onclick="salvar(\${index})" style="padding:8px 15px; background:#F37021; color:white; border:none; border-radius:5px; cursor:pointer;">💾 ATUALIZAR</button></div></div>\`});});function salvar(id){const q=document.getElementById('qtd_'+id).value;socket.emit('admin_update',{id:id,qtd:q});alert('Atualizado!');}</script></body></html>
 `;
 
 // --- ROTAS ---
@@ -248,54 +272,23 @@ io.on('connection', (socket) => {
     
     socket.on('resgatar_oferta', (id) => {
         let camp = campanhas[id];
-        // Para café e ducha, sempre tem estoque. Para combustível, checa o estoque "gold".
-        if (camp) {
-            
-            let cor1 = camp.corPrincipal;
-            let cor2 = camp.corSecundaria;
-            let nomeFinal = camp.nome;
-            let isGold = false;
-            let prefixo = camp.prefixo;
-
-            // --- LÓGICA DO SORTEIO (SÓ PARA O SLIDE 0 - COMBUSTÍVEL) ---
-            if (id === 0) {
-                const sorte = Math.floor(Math.random() * 100) + 1;
-                
-                // 5% de chance E tem que ter estoque do Gold
-                if (sorte > 95 && camp.qtd > 0) {
-                    isGold = true;
-                    camp.qtd--; // Desconta um Gold
-                    cor1 = '#FFD700'; // Dourado Ouro
-                    cor2 = '#B8860B';
-                    nomeFinal = `🌟 ${camp.nome} (50% OFF)`;
-                    prefixo = "GOLD";
-                } else {
-                    // Prêmio de Consolação (95% das vezes)
-                    cor1 = '#FFCC00'; // Amarelo Normal
-                    cor2 = '#003399';
-                    nomeFinal = "Combustível 2% OFF"; // Prêmio comum
-                    prefixo = "DESC";
-                }
-            } else {
-                // Para Café e Ducha, não desconta estoque, é ilimitado/garantido
-                camp.qtd = 999; 
-            }
-
-            // DADOS GERAIS
+        if (camp && camp.qtd > 0) {
+            camp.qtd--;
             camp.totalResgates++;
-            const agora = new Date();
-            const horaAtual = agora.getHours();
-            if(horaAtual >= 0 && horaAtual <= 23) camp.resgatesPorHora[horaAtual]++;
-            camp.ultimoCupom = gerarCodigo(prefixo);
-            camp.ultimaHora = agora.toLocaleTimeString('pt-BR');
-
-            // Atualiza Admin e TV
             io.emit('atualizar_qtd', camp);
             if(slideAtual === id) io.emit('trocar_slide', camp);
+            
+            const sorte = Math.floor(Math.random() * 100) + 1;
+            let cor1 = camp.corPrincipal; let cor2 = camp.corSecundaria; let nomeFinal = camp.nome;
+            let isGold = false;
 
-            // Manda Voucher
+            if (sorte > 90) { 
+                isGold = true;
+                cor1 = '#FFD700'; cor2 = '#DAA520'; nomeFinal = `🌟 ${camp.nome} (SUPER OFERTA)`;
+            }
+
             socket.emit('sucesso', { 
-                codigo: camp.ultimoCupom, 
+                codigo: gerarCodigo(camp.prefixo), 
                 produto: nomeFinal,
                 corPrincipal: cor1,
                 corSecundaria: cor2,
