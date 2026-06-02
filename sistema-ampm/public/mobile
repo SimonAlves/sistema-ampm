@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WEGO - PREMIER GAMING</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root { 
+            --bg-dark: #06110b; 
+            --forest-green: #143a24;
+            --golden-mustard: #eab308;
+            --neon-blue: #38bdf8;
+            --glass-bg: rgba(20, 58, 36, 0.4);
+            --input-bg: rgba(10, 31, 18, 0.8);
+            --text-main: #f8fafc;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: radial-gradient(circle at top, #0f2417, var(--bg-dark)); 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; color: var(--text-main); 
+            overflow: hidden; touch-action: none; 
+        }
+        
+        .card { 
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            width: 92%; max-width: 420px; padding: 40px 30px; 
+            border-radius: 32px; border: 1px solid rgba(234, 179, 8, 0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1); 
+            text-align: center; position: relative; overflow: hidden; 
+        }
+        
+        .card::before { 
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 6px; 
+            background: linear-gradient(90deg, var(--forest-green), var(--golden-mustard), var(--forest-green)); 
+            background-size: 200% auto; animation: shine 3s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        .logo-header { font-size: 2.6rem; font-weight: 900; color: #fff; margin-bottom: 25px; letter-spacing: -2px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        
+        .input-block { text-align: left; margin-bottom: 20px; }
+        .input-block label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-left: 5px; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
+        
+        input { 
+            width: 100%; padding: 18px 20px; border-radius: 16px; 
+            border: 1px solid #334155; font-size: 1.1rem; box-sizing: border-box; 
+            font-weight: 600; background: var(--input-bg); color: #fff; outline: none; 
+            transition: all 0.3s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:focus { border-color: var(--golden-mustard); background: #06110b; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.15); }
+        
+        .lgpd-box { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 16px; font-size: 0.82rem; color: #94a3b8; text-align: left; margin-bottom: 25px; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .lgpd-box input { width: 24px; height: 24px; margin-right: 12px; accent-color: var(--golden-mustard); cursor: pointer; }
+        .lgpd-box b { color: var(--golden-mustard); cursor: pointer; text-decoration: underline; font-weight: 700; }
+        
+        .btn-main { 
+            width: 100%; padding: 20px; background: linear-gradient(135deg, #facc15, #ca8a04); 
+            color: #000; border: none; border-radius: 20px; font-weight: 900; font-size: 1.2rem; 
+            cursor: pointer; transition: all 0.3s; box-shadow: 0 10px 25px rgba(234, 179, 8, 0.3); text-transform: uppercase;
+        }
+        .btn-main:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(234, 179, 8, 0.5); }
+        .btn-main:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; }
+        .active-pulse { animation: pulseBtn 2s infinite; }
+        @keyframes pulseBtn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+        /* --- HUB & GAMES CSS --- */
+        .hub-btn { background: rgba(0,0,0,0.4); border: 2px solid var(--golden-mustard); border-radius: 16px; padding: 20px; margin-bottom: 15px; color: #fff; text-align: left; cursor: pointer; }
+        .hub-btn h3 { margin: 0 0 5px 0; color: var(--golden-mustard); font-size: 1.4rem; }
+        .hub-btn p { margin: 0; font-size: 0.85rem; color: #94a3b8; }
+        
+        #step-roleta, #step-memoria { position: fixed; inset: 0; background: var(--bg-dark); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #canvas-container { width: 100vw; height: 100vw; max-height: 60vh; }
+        .instrucao-overlay { position: absolute; top: 15%; text-align: center; width: 100%; pointer-events: none; }
+        .instrucao-overlay h2 { font-size: 2rem; color: var(--golden-mustard); margin: 0; text-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        
+        #memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 90vw; max-width: 400px; perspective: 1000px; }
+        .mem-card { aspect-ratio: 1/1; position: relative; transform-style: preserve-3d; transition: transform 0.5s; cursor: pointer; border-radius: 12px; }
+        .mem-card.flipped { transform: rotateY(180deg); }
+        .mem-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .mem-front { background: linear-gradient(135deg, var(--forest-green), #0a1f12); border: 2px solid rgba(234, 179, 8, 0.3); }
+        .mem-back { background: var(--golden-mustard); transform: rotateY(180deg); color: #000; }
+        
+        #resCodigo { font-size: 2.2rem; font-weight: 900; border: 3px dashed var(--golden-mustard); padding: 20px; margin: 20px 0; background: rgba(234, 179, 8, 0.1); color: var(--golden-mustard); border-radius: 20px; letter-spacing: 2px; }
+        #modalTermos { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; padding: 20px; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-content { background: #0f172a; padding: 30px; border-radius: 24px; border: 1px solid #334155; max-width: 500px; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+<audio id="sfxWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
+
+    <div class="card" id="step-id">
+        <div class="logo-header">WEGO</div>
+        <div class="input-block"><label>Seu Nome e Sobrenome</label><input type="text" id="inNome" placeholder="Ex: João Silva" oninput="validar()"></div>
+        <div class="input-block"><label>WhatsApp Oficial</label><input type="tel" id="inZap" placeholder="(00) 00000-0000" maxlength="15" oninput="validar()"></div>
+        <div class="lgpd-box">
+            <input type="checkbox" id="checkLgpd" onchange="validar()">
+            <span>Li e aceito os <b onclick="document.getElementById('modalTermos').style.display='flex'">Termos</b>.</span>
+        </div>
+        <button id="btnAvancar" class="btn-main" onclick="resgatarOferta()" disabled>LIBERAR MINHA SORTE</button>
+    </div>
+
+    <div class="card" id="step-hub" style="display:none;">
+        <div class="logo-header" style="font-size: 2rem;">ESCOLHA SEU DESAFIO</div>
+        <div class="hub-btn" onclick="iniciarRoleta3D()">
+            <h3>🎯 Roleta 3D</h3><p>Deslize a tela para girar a sorte.</p>
+        </div>
+        <div class="hub-btn" onclick="iniciarMemoria()">
+            <h3>🃏 Speed Match</h3><p>Encontre os pares rapidamente.</p>
+        </div>
+    </div>
+
+    <div id="step-roleta">
+        <div class="instrucao-overlay"><h2>DESLIZE PARA GIRAR</h2></div>
+        <div id="canvas-container"></div>
+    </div>
+
+    <div id="step-memoria">
+        <div class="instrucao-overlay" style="top: 5%;"><h2>ENCONTRE OS PARES</h2></div>
+        <div id="memory-grid"></div>
+    </div>
+
+    <div class="card" id="step-res" style="display:none; z-index: 100;">
+        <div class="logo-header" style="color: var(--golden-mustard);">PARABÉNS! 🎉</div>
+        <h2 id="resNomePremio" style="color:#fff; text-transform: uppercase; font-size: 1.6rem; margin-bottom: 5px;"></h2>
+        <div id="resCodigo"></div>
+        <button class="btn-main" onclick="enviarWhatsApp()">📥 SALVAR NO WHATSAPP</button>
+    </div>
+
+    <div id="modalTermos">
+        <div class="modal-content">
+            <h3 style="color:#fff; margin-top:0;">📜 Termos WEGO</h3>
+            <p>Seus dados serão usados para controle de prêmios. Apenas 1 giro por CPF/WhatsApp a cada 30 dias.</p>
+            <button class="btn-main" onclick="document.getElementById('modalTermos').style.display='none'">FECHAR</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const locCapturada = urlParams.get('l') || 'Geral';
+        const socket = io(); 
+        socket.emit('join', locCapturada);
+        
+        let dP = {}; // Dados do Prêmio recebidos do servidor
+
+        // --- VALIDAÇÃO DE FORMULÁRIO ---
+        document.getElementById('inZap').addEventListener('input', e => {
+            let v = e.target.value.replace(/\D/g, "");
+            if (v.length > 10) e.target.value = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7, 11)}`;
+            validar();
+        });
+
+        function validar() {
+            const n = document.getElementById('inNome').value.trim();
+            const z = document.getElementById('inZap').value.replace(/\D/g, "");
+            const l = document.getElementById('checkLgpd').checked;
+            const btn = document.getElementById('btnAvancar');
+            if (n.includes(' ') && z.length >= 10 && l) {
+                btn.disabled = false; btn.classList.add('active-pulse');
+            } else {
+                btn.disabled = true; btn.classList.remove('active-pulse');
+            }
+        }
+
+        // --- CONEXÃO COM SERVIDOR ---
+        function resgatarOferta() {
+            document.getElementById('btnAvancar').innerText = "CONECTANDO...";
+            document.getElementById('btnAvancar').disabled = true;
+            socket.emit('resgatar_oferta', { 
+                nome: document.getElementById('inNome').value, 
+                whatsapp: document.getElementById('inZap').value, loc: locCapturada 
+            });
+        }
+
+        socket.on('sucesso', dados => { 
+            dP = dados; 
+            document.getElementById('step-id').style.display = 'none';
+            document.getElementById('step-hub').style.display = 'block';
+        });
+
+        socket.on('erro', err => { alert(err.msg); window.location.reload(); });
+
+        // --- FUNÇÃO FINAL DE VITÓRIA ---
+        function concluirJogo() {
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            document.getElementById('sfxWin').play().catch(()=>{});
+            
+            socket.emit('liberar_tv', { nome: dP.nome, premio: dP.produto, isOuro: dP.isOuro, loja: locCapturada });
+            
+            document.getElementById('step-roleta').style.display = 'none';
+            document.getElementById('step-memoria').style.display = 'none';
+            document.getElementById('step-hub').style.display = 'none';
+            document.getElementById('step-res').style.display = 'block';
+            
+            document.getElementById('resNomePremio').innerText = dP.produto;
+            document.getElementById('resCodigo').innerText = dP.codigo;
+
+            confetti({ particleCount: dP.isOuro ? 300 : 150, spread: 80, origin: { y: 0.6 }, colors: ['#eab308', '#ca8a04', '#ffffff'] });
+        }
+
+        function enviarWhatsApp() {
+            const msg = `*WEGO*%0AGanhei: *${dP.produto}*%0AVoucher: *${dP.codigo}*`;
+            window.open(`https://wa.me/55${document.getElementById('inZap').value.replace(/\D/g, "")}?text=${msg}`);
+        }
+
+        // ====================================================
+        // MOTOR 1: SPEED MATCH (MEMÓRIA)
+        // ====================================================
+        function iniciarMemoria() {
+            document.getElementById('step-hub').style.display = 'none';
+            document.getElementById('step-memoria').style.display = 'flex';
+            socket.emit('cliente_girando', { nome: dP.nome, loc: locCapturada });
+
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            let emoticons = ['💎', '🎁', '🚀', '🌟', '💰', '🏆', '📱', '🎧'];
+            let deck = [...emoticons, ...emoticons].sort(() => Math.random() - 0.5);
+            let flipped = [], matches = 0;
+
+            deck.forEach(simbolo => {
+                let card = document.createElement('div');
+                card.className = 'mem-card';
+                card.innerHTML = `<div class="mem-face mem-front"></div><div class="mem-face mem-back">${simbolo}</div>`;
+                card.onclick = () => {
+                    if (card.classList.contains('flipped') || flipped.length >= 2) return;
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    card.classList.add('flipped');
+                    flipped.push({ card, simbolo });
+
+                    if (flipped.length === 2) {
+                        setTimeout(() => {
+                            if (flipped[0].simbolo === flipped[1].simbolo) {
+                                matches++;
+                                if (matches === 8) setTimeout(concluirJogo, 500);
+                            } else {
+                                if (navigator.vibrate) navigator.vibrate(40);
+                                flipped[0].card.classList.remove('flipped');
+                                flipped[1].card.classList.remove('flipped');
+                            }
+                            flipped = [];
+                        }, 600);
+                    }
+                };
+                grid.appendChild(card);
+            });
+        }
+
+        // ====================================================
+        // MOTOR 2: ROLETA 3D (THREE.JS)
+        // ====================================================
+        let roleta3D, renderer, scene, camera, isDragging = false, lastY = 0, velocidade = 0;
+        
+        function iniciarRoleta3D() {
+            document.getElementById('step-hub').style.display = 'none';
+            document.getElementById('step-roleta').style.display = 'flex';
+            socket.emit('cliente_girando', { nome: dP.nome, loc: locCapturada });
+
+            if(roleta3D) return; // Evita duplicar canvas
+
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, -3, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerWidth);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Luzes Premium
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const luz = new THREE.PointLight(0xeab308, 1.5, 50); luz.position.set(5, 5, 5); scene.add(luz);
+
+            // Textura
+            const canvas2d = document.createElement('canvas');
+            canvas2d.width = 1024; canvas2d.height = 1024;
+            const ctx = canvas2d.getContext('2d');
+            const fatias = ["PRÊMIO VIP", "GIRE FORTE", "SUPER OFERTA", "WEGO", "SURPRESA", "OURO"];
+            const cores = ["#143a24", "#0a1f12", "#143a24", "#0a1f12", "#eab308", "#0a1f12"];
+            const raio = 512, sliceAngle = (Math.PI * 2) / 6;
+
+            ctx.translate(512, 512);
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, raio, i * sliceAngle, (i + 1) * sliceAngle);
+                ctx.fillStyle = cores[i]; ctx.fill(); ctx.lineWidth = 10; ctx.strokeStyle = "#eab308"; ctx.stroke();
+                ctx.save(); ctx.rotate(i * sliceAngle + sliceAngle / 2);
+                ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillStyle = cores[i]==="#eab308"?"#000":"#fff";
+                ctx.font = "bold 65px sans-serif"; ctx.fillText(fatias[i], raio - 60, 0); ctx.restore();
+            }
+
+            const geo = new THREE.CylinderGeometry(5, 5, 1, 64);
+            const matFace = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(canvas2d), roughness: 0.2, metalness: 0.1 });
+            const matBorda = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3, metalness: 0.8 });
+            
+            roleta3D = new THREE.Mesh(geo, [matBorda, matFace, matBorda]);
+            roleta3D.rotation.x = Math.PI / 2;
+            scene.add(roleta3D);
+
+            // Ponteiro
+            const ponteiro = new THREE.Mesh(new THREE.ConeGeometry(0.6, 2, 16), new THREE.MeshStandardMaterial({color: 0xeab308}));
+            ponteiro.position.set(0, 5.5, 0.5); ponteiro.rotation.x = Math.PI/4; scene.add(ponteiro);
+
+            // Interação
+            container.addEventListener('touchstart', e => { isDragging = true; lastY = e.touches[0].clientY; velocidade = 0; });
+            container.addEventListener('touchmove', e => {
+                if(!isDragging) return;
+                const deltaY = e.touches[0].clientY - lastY;
+                roleta3D.rotation.y += deltaY * 0.01; velocidade = deltaY * 0.04; lastY = e.touches[0].clientY;
+            });
+            container.addEventListener('touchend', () => isDragging = false);
+
+            function animar() {
+                requestAnimationFrame(animar);
+                if (!isDragging) {
+                    roleta3D.rotation.y += velocidade; velocidade *= 0.985;
+                    if (Math.abs(velocidade) > 0.01) ponteiro.rotation.z = Math.random() * 0.2 - 0.1; 
+                    else ponteiro.rotation.z = 0;
+
+                    if (Math.abs(velocidade) > 0 && Math.abs(velocidade) < 0.005) {
+                        velocidade = 0; setTimeout(concluirJogo, 800);
+                    }
+                }
+                renderer.render(scene, camera);
+            }
+            animar();
+        }
+    </script>
+</body>
+</html>
