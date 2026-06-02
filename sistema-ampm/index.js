@@ -1,325 +1,334 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const QRCode = require('qrcode');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-app.use(express.static(__dirname));
-app.use(express.static('public'));
-
-// --- CONFIGURAÇÃO EXATA DAS 3 OFERTAS ---
-let campanhas = [
-    // SLIDE 0: COMBUSTÍVEL (OURO - SORTEIO DIFÍCIL)
-    { 
-        id: 0, 
-        tipo: 'foto', 
-        arquivo: "slide1.jpg", 
-        nome: "Sorteio 50% OFF", // Nome na TV
-        qtd: 5, // Estoque baixo pois é prêmio valioso
-        ativa: true, 
-        corPrincipal: '#FFD700', // Dourado
-        corSecundaria: '#003399', // Azul
-        prefixo: 'GOLD',
-        ehSorteio: true // Ativa modo difícil
-    },
-    // SLIDE 1: DUCHA GRÁTIS (AZUL)
-    { 
-        id: 1, 
-        tipo: 'foto', 
-        arquivo: "slide2.jpg", 
-        nome: "Ducha Grátis",   
-        qtd: 50, 
-        ativa: true, 
-        corPrincipal: '#0055aa', // Azul Polipet/Ipiranga
-        corSecundaria: '#0099ff', // Azul Claro
-        prefixo: 'DUCHA',
-        ehSorteio: false
-    },
-    // SLIDE 2: CAFÉ EXPRESSO (LARANJA)
-    { 
-        id: 2, 
-        tipo: 'foto', 
-        arquivo: "slide3.jpg", 
-        nome: "Café Expresso Grátis",        
-        qtd: 50, 
-        ativa: true, 
-        corPrincipal: '#F37021', // Laranja AMPM
-        corSecundaria: '#663300', // Marrom
-        prefixo: 'CAFE',
-        ehSorteio: false
-    }
-];
-
-let slideAtual = 0;
-
-// Rotação a cada 15 segundos
-setInterval(() => {
-    slideAtual++;
-    if (slideAtual >= campanhas.length) slideAtual = 0;
-    io.emit('trocar_slide', campanhas[slideAtual]);
-}, 15000);
-
-function gerarCodigo(prefixo) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let res = '';
-    for (let i=0; i<4; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-    return `${prefixo}-${res}`;
-}
-
-// --- HTML TV ---
-const htmlTV = `
 <!DOCTYPE html>
-<html>
-<head><title>TV Promo</title></head>
-<body style="margin:0; background:black; overflow:hidden; font-family:Arial; transition: background 0.5s;">
-    <div style="display:flex; height:100vh;">
-        <div style="flex:3; background:#ccc; display:flex; align-items:center; justify-content:center; overflow:hidden;" id="bgEsq">
-            <img id="imgDisplay" src="" style="width:100%; height:100%; object-fit:contain;">
-        </div>
-        <div style="flex:1; background:#003399; display:flex; flex-direction:column; align-items:center; justify-content:center; border-left:6px solid #FFCC00; text-align:center; color:white;" id="bgDir">
-            <img src="logo.png" onerror="this.style.display='none'" style="width:150px; background:white; padding:10px; border-radius:10px; margin-bottom:30px;">
-            
-            <h1 id="nomeProd" style="font-size:2.5rem; padding:0 10px; font-weight:800;">...</h1>
-            
-            <div style="background:white; padding:10px; border-radius:10px; margin-top:20px;">
-                <img id="qr" src="qrcode.png" style="width:200px; display:block;" 
-                     onerror="this.onerror=null; fetch('/qrcode').then(r=>r.text()).then(u=>this.src=u);">
-            </div>
-            
-            <p style="margin-top:10px; font-weight:bold; font-size:1.2rem;" id="txtScan">ESCANEIE AGORA</p>
-            
-            <div id="boxNum" style="margin-top:30px; border-top:2px dashed rgba(255,255,255,0.3); width:80%; padding-top:20px;">
-                <span style="font-size:1.2rem;">RESTAM APENAS:</span><br>
-                <span id="num" style="font-size:6rem; font-weight:900; line-height:1;">--</span>
-            </div>
-        </div>
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        socket.on('trocar_slide', (d) => { update(d); });
-        socket.on('atualizar_qtd', (d) => {
-            if(document.getElementById('nomeProd').innerText === d.nome) {
-                document.getElementById('num').innerText = d.qtd;
-            }
-        });
-        function update(d) {
-            document.getElementById('imgDisplay').src = d.arquivo;
-            document.getElementById('nomeProd').innerText = d.nome;
-            document.getElementById('num').innerText = d.qtd;
-            
-            document.getElementById('bgDir').style.background = d.corPrincipal;
-            document.getElementById('bgEsq').style.background = d.corSecundaria;
-            
-            const corTexto = (d.corPrincipal === '#FFD700') ? '#003399' : 'white';
-            document.getElementById('bgDir').style.color = corTexto;
-            document.getElementById('num').style.color = (d.corPrincipal === '#FFD700') ? '#003399' : '#FFCC00';
-
-            // Se for sorteio difícil (Combustível), muda o texto
-            if(d.ehSorteio) {
-                document.getElementById('boxNum').style.display = 'none'; // Esconde estoque pra dar misterio
-                document.getElementById('txtScan').innerText = "TENTE A SORTE!";
-            } else {
-                document.getElementById('boxNum').style.display = 'block';
-                document.getElementById('txtScan').innerText = "GARANTA O SEU";
-            }
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WEGO Machine - Premium Gamification</title>
+    <style>
+        :root {
+            --bg-dark: #06110b; /* Fundo super escuro com leve toque verde */
+            --forest-green: #143a24;
+            --golden-mustard: #eab308;
+            --neon-blue: #38bdf8;
+            --glass-bg: rgba(20, 58, 36, 0.4);
+            --glass-border: rgba(234, 179, 8, 0.2);
         }
-    </script>
-</body>
-</html>
-`;
 
-// --- HTML MOBILE (COM TRAVA TOTAL ANTI-FRAUDE) ---
-const htmlMobile = `
-<!DOCTYPE html>
-<html>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    body { font-family: Arial, sans-serif; text-align:center; padding:20px; background:#f0f2f5; margin:0; transition: background 0.3s; }
-    .btn-pegar { width:100%; padding:20px; color:white; border:none; border-radius:10px; font-size:20px; margin-top:20px; font-weight:bold; text-transform:uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    .img-prod { width:100%; max-width:300px; border-radius:10px; margin-bottom:15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .ticket-paper { background: #fff; padding: 0; margin-top: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 10px solid #F37021; }
-    .ticket-body { padding: 25px; }
-    .codigo-texto { font-size: 32px; font-weight: bold; letter-spacing: 2px; font-family: monospace; color:#333; }
-    .no-print { display: block; }
-    @media print { .no-print { display:none; } body { background:white; } .ticket-paper { box-shadow:none; border:1px solid #ccc; } }
-</style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+        
+        body { 
+            background: radial-gradient(circle at center, #0f2417, var(--bg-dark)); 
+            color: #fff; height: 100vh; width: 100vw; overflow: hidden; touch-action: none; 
+        }
+
+        /* --- TELA INICIAL (HUB) --- */
+        #hub-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; z-index: 10; position: relative;
+        }
+
+        h1 { font-size: 3rem; font-weight: 900; color: var(--golden-mustard); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 40px; text-shadow: 0 10px 30px rgba(234, 179, 8, 0.3); }
+
+        .btn-card {
+            background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); border-radius: 24px; padding: 30px 40px; margin: 15px; width: 80%; max-width: 400px;
+            text-align: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .btn-card:active { transform: scale(0.95); box-shadow: 0 5px 15px rgba(234, 179, 8, 0.5); }
+        .btn-card h2 { font-size: 1.8rem; color: #fff; margin-bottom: 10px; }
+        .btn-card p { font-size: 1rem; color: #94a3b8; }
+
+        /* --- TELAS DE JOGO (Ocultas por padrão) --- */
+        .game-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; position: absolute; top: 0; left: 0; background: var(--bg-dark); }
+        
+        .btn-voltar { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: bold; font-size: 1.2rem; z-index: 100; }
+
+        /* --- ROLETA CANVAS --- */
+        #roleta-container { position: relative; width: 90vw; max-width: 600px; height: 90vw; max-height: 600px; }
+        canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 60px rgba(234, 179, 8, 0.15); }
+        #ponteiro { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-top: 55px solid var(--golden-mustard); z-index: 10; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); transform-origin: top center; transition: transform 0.1s; }
+        .instrucao-touch { position: absolute; bottom: -60px; width: 100%; text-align: center; color: var(--neon-blue); font-size: 1.4rem; font-weight: 900; text-transform: uppercase; animation: pulse 2s infinite; }
+
+        /* --- SPEED MATCH (MEMÓRIA) --- */
+        #memory-container { width: 90vw; max-width: 600px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; perspective: 1000px; }
+        .mem-card { aspect-ratio: 1/1; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); border-radius: 16px; cursor: pointer; }
+        .mem-card.flipped { transform: rotateY(180deg); }
+        .mem-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 3rem; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .mem-front { background: linear-gradient(135deg, var(--forest-green), #0a1f12); border: 2px solid var(--glass-border); }
+        .mem-front::after { content: 'W'; font-weight: 900; font-size: 2.5rem; color: rgba(255,255,255,0.1); }
+        .mem-back { background: var(--golden-mustard); transform: rotateY(180deg); color: #000; border: 2px solid #fff; }
+        
+        #timer-bar { width: 90vw; max-width: 600px; height: 15px; background: #334155; border-radius: 20px; margin-bottom: 30px; overflow: hidden; position: relative; }
+        #timer-fill { height: 100%; background: var(--neon-blue); width: 100%; transition: width 0.1s linear, background-color 0.3s; }
+
+        /* --- MODAL DE VITÓRIA --- */
+        #win-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); z-index: 999; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .win-box { border: 4px solid var(--golden-mustard); padding: 50px; border-radius: 30px; background: var(--bg-dark); box-shadow: 0 0 100px rgba(234, 179, 8, 0.4); animation: pop 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49); width: 80%; max-width: 500px; }
+        #win-title { font-size: 2.5rem; color: #fff; margin-bottom: 20px; }
+        #win-prize { font-size: 4rem; font-weight: 900; color: var(--golden-mustard); text-transform: uppercase; text-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
+        .btn-resgatar { margin-top: 30px; background: var(--neon-blue); color: #000; border: none; padding: 20px 40px; font-size: 1.5rem; font-weight: 900; border-radius: 50px; width: 100%; }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
 <body>
-    <div id="telaPegar">
-        <h3 style="color:#555;">OFERTA DO MOMENTO:</h3>
-        <img id="fotoM" src="" class="img-prod">
-        <h2 id="nomeM" style="color:#333; margin:10px 0;">...</h2>
-        <div style="background:white; padding:10px; border-radius:5px; display:inline-block;">
-            <span style="color:#666; font-size:12px;">ESTOQUE: </span><strong id="qtdM">--</strong>
-        </div><br>
-        <button onclick="resgatar()" id="btnResgatar" class="btn-pegar">...</button>
-    </div>
 
-    <div id="telaVoucher" style="display:none;">
-        <h2 class="no-print" style="color:#003399;">VOCÊ JÁ GANHOU HOJE! 🎉</h2>
-        <div class="ticket-paper" id="ticketContainer">
-            <div class="ticket-body">
-                <img src="logo.png" width="100" style="margin-bottom:10px;" onerror="this.style.display='none'">
-                <p style="font-size:14px; color:#666; text-transform:uppercase;">Seu Prêmio:</p>
-                <h1 id="voucherNome" style="font-size:24px; color:#333; margin:10px 0;">...</h1>
-                <div style="background:#f8f9fa; border:2px dashed #ccc; padding:15px; margin:20px 0;">
-                    <div class="codigo-texto" id="codGerado">...</div>
-                </div>
-                <p style="font-size:12px; color:#555;">Gerado em: <span id="dataHora" style="font-weight:bold;"></span></p>
-                <p style="font-size:12px; font-weight:bold; color:red;">Válido apenas hoje.</p>
-            </div>
+    <!-- HUB INICIAL -->
+    <div id="hub-screen">
+        <h1>WEGO Machine</h1>
+        <div class="btn-card" onclick="abrirJogo('roleta')">
+            <h2>🎯 Roleta Haptica</h2>
+            <p>Deslize para girar com física real</p>
         </div>
-        <button onclick="window.print()" class="btn-pegar no-print" style="background:#333;">🖨️ IMPRIMIR</button>
-        <p class="no-print" style="font-size:12px; color:gray; margin-top:20px;">⚠️ Limite de 1 cupom por pessoa/dia.</p>
+        <div class="btn-card" onclick="abrirJogo('memoria')">
+            <h2>🃏 Speed Match</h2>
+            <p>Encontre os pares antes do tempo acabar</p>
+        </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- TELA DA ROLETA -->
+    <div id="screen-roleta" class="game-screen">
+        <button class="btn-voltar" onclick="voltarHub()">✕ VOLTAR</button>
+        <div id="roleta-container">
+            <div id="ponteiro"></div>
+            <canvas id="roletaCanvas" width="800" height="800"></canvas>
+            <div class="instrucao-touch">Deslize o dedo com força! 👇</div>
+        </div>
+    </div>
+
+    <!-- TELA DO SPEED MATCH -->
+    <div id="screen-memoria" class="game-screen">
+        <button class="btn-voltar" onclick="voltarHub()">✕ VOLTAR</button>
+        <div id="timer-bar"><div id="timer-fill"></div></div>
+        <div id="memory-container"></div>
+    </div>
+
+    <!-- MODAL DE VITÓRIA -->
+    <div id="win-overlay">
+        <div class="win-box">
+            <div id="win-title">PARABÉNS!</div>
+            <div id="win-prize">PRÊMIO</div>
+            <button class="btn-resgatar" onclick="voltarHub()">CONCLUIR</button>
+        </div>
+    </div>
+
     <script>
-        const socket = io();
-        let ofertaAtual = null;
-
-        // --- TRAVA DE SEGURANÇA (1 POR DIA) ---
-        const hoje = new Date().toLocaleDateString('pt-BR');
-        const salvo = localStorage.getItem('ampm_cupom');
-        const dataSalva = localStorage.getItem('ampm_data');
-
-        // Se já pegou hoje, BLOQUEIA na tela do voucher
-        if (salvo && dataSalva === hoje) {
-            mostrarVoucher(JSON.parse(salvo));
+        // --- CONTROLE DE TELAS ---
+        function abrirJogo(jogo) {
+            document.getElementById('hub-screen').style.display = 'none';
+            document.querySelectorAll('.game-screen').forEach(el => el.style.display = 'none');
+            document.getElementById(`screen-${jogo}`).style.display = 'flex';
+            
+            if(jogo === 'roleta') initRoleta();
+            if(jogo === 'memoria') initMemoria();
         }
 
-        socket.on('trocar_slide', (d) => {
-            // Só atualiza se o cara AINDA NÃO PEGOU cupom hoje
-            if (document.getElementById('telaVoucher').style.display === 'none') {
-                ofertaAtual = d;
-                document.getElementById('fotoM').src = d.arquivo;
-                document.getElementById('nomeM').innerText = d.nome;
-                document.getElementById('qtdM').innerText = d.qtd;
-                
-                const btn = document.getElementById('btnResgatar');
-                btn.style.background = d.corPrincipal;
-                
-                if(d.ehSorteio) {
-                    btn.innerText = "TENTAR A SORTE (5%)";
-                    btn.style.color = (d.corPrincipal === '#FFD700') ? '#003399' : 'white';
-                } else {
-                    btn.innerText = "GARANTIR AGORA";
-                    btn.style.color = 'white';
+        function voltarHub() {
+            document.getElementById('win-overlay').style.display = 'none';
+            document.querySelectorAll('.game-screen').forEach(el => el.style.display = 'none');
+            document.getElementById('hub-screen').style.display = 'flex';
+            clearInterval(memTimerInterval);
+            cancelAnimationFrame(roletaAnimationId);
+        }
+
+        function showWin(premio) {
+            if(navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 500]);
+            document.getElementById('win-prize').innerText = premio;
+            document.getElementById('win-overlay').style.display = 'flex';
+        }
+
+        function triggerHaptic(ms = 15) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        // ==========================================
+        // 1. MOTOR DA ROLETA COM FÍSICA (CANVAS)
+        // ==========================================
+        const canvas = document.getElementById('roletaCanvas');
+        const ctx = canvas.getContext('2d');
+        const ponteiro = document.getElementById('ponteiro');
+        let roletaAnimationId;
+        
+        const fatias = ["10% OFF", "BRINDE VIP", "TENTE DE NOVO", "FRETE GRÁTIS", "OURO DOURADO", "20% OFF"];
+        const cores = ["#143a24", "#0a1f12", "#143a24", "#0a1f12", "#eab308", "#0a1f12"]; // Palette Wego
+        
+        let angle = 0, velocity = 0, isDragging = false, lastY = 0;
+        const friction = 0.985; // Desaceleração suave
+
+        function desenharRoleta() {
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            const sliceAngle = (Math.PI * 2) / fatias.length;
+
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(angle);
+
+            for (let i = 0; i < fatias.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, w / 2, i * sliceAngle, (i + 1) * sliceAngle);
+                ctx.fillStyle = cores[i];
+                ctx.fill();
+                ctx.lineWidth = 4; ctx.strokeStyle = "#eab308"; ctx.stroke();
+
+                ctx.save();
+                ctx.rotate(i * sliceAngle + sliceAngle / 2);
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                ctx.fillStyle = (cores[i] === "#eab308") ? "#000" : "#fff";
+                ctx.font = "900 40px 'Segoe UI'";
+                ctx.fillText(fatias[i], w / 2 - 40, 0);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        function updateFisica() {
+            if (!isDragging) {
+                angle += velocity;
+                velocity *= friction;
+
+                // Animação do ponteiro (feedback tátil e visual)
+                const degrees = (angle * 180 / Math.PI) % 360;
+                const sliceSize = 360 / fatias.length;
+                const offset = degrees % sliceSize;
+
+                if (velocity > 0.005) {
+                    if (offset < 8 || offset > sliceSize - 8) {
+                        ponteiro.style.transform = `translateX(-50%) rotate(25deg)`;
+                        if (offset < 2 && velocity > 0.05) triggerHaptic(10); // Estalo ao passar na catraca
+                    } else {
+                        ponteiro.style.transform = `translateX(-50%) rotate(0deg)`;
+                    }
+                } else if (velocity > 0 && velocity < 0.005) {
+                    // ROLETA PAROU
+                    velocity = 0;
+                    ponteiro.style.transform = `translateX(-50%) rotate(0deg)`;
+                    calcularPremioRoleta();
+                    return; 
                 }
             }
-        });
-
-        socket.emit('pedir_atualizacao');
-
-        function resgatar() { 
-            if(ofertaAtual) socket.emit('resgatar_oferta', ofertaAtual.id); 
+            desenharRoleta();
+            roletaAnimationId = requestAnimationFrame(updateFisica);
         }
 
-        socket.on('sucesso', (dados) => {
-            // Salva no celular pra bloquear refreshes
-            const agora = new Date();
-            dados.horaTexto = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR');
-            
-            localStorage.setItem('ampm_cupom', JSON.stringify(dados));
-            localStorage.setItem('ampm_data', agora.toLocaleDateString('pt-BR'));
-            
-            mostrarVoucher(dados);
-        });
+        function calcularPremioRoleta() {
+            // Lógica reversa: baseado no ângulo final, qual fatia parou no ponteiro (Top / 270 graus)?
+            const degrees = (360 - ((angle * 180 / Math.PI) % 360)) % 360;
+            const sliceSize = 360 / fatias.length;
+            // Ajuste do ponteiro que está no topo (-90 graus no canvas base)
+            let index = Math.floor(((degrees + 270) % 360) / sliceSize);
+            setTimeout(() => showWin(fatias[index]), 800);
+        }
 
-        function mostrarVoucher(dados) {
-            document.getElementById('telaPegar').style.display='none';
-            document.getElementById('telaVoucher').style.display='block';
+        // Eventos Touch da Roleta
+        canvas.addEventListener('touchstart', (e) => {
+            isDragging = true; lastY = e.touches[0].clientY; velocity = 0;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const currentY = e.touches[0].clientY;
+            const deltaY = currentY - lastY;
+            angle += deltaY * 0.005;
+            velocity = deltaY * 0.02; // Impulso gerado pelo dedo
+            lastY = currentY;
+            desenharRoleta();
+        });
+        canvas.addEventListener('touchend', () => { isDragging = false; });
+
+        function initRoleta() {
+            angle = 0; velocity = 0;
+            desenharRoleta();
+            updateFisica();
+        }
+
+        // ==========================================
+        // 2. MOTOR DO SPEED MATCH (MEMÓRIA 3D)
+        // ==========================================
+        const containerMemoria = document.getElementById('memory-container');
+        const timerFill = document.getElementById('timer-fill');
+        let emoticons = ['💎', '🎁', '🚀', '🌟', '💰', '🏆', '📱', '🎧'];
+        let cartas = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let memTimerInterval;
+        let timeLeft = 20; // 20 Segundos de pressão
+        const tempoTotal = 20;
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+        function initMemoria() {
+            containerMemoria.innerHTML = '';
+            flippedCards = []; matchedPairs = 0; timeLeft = tempoTotal;
+            timerFill.style.width = '100%';
+            timerFill.style.backgroundColor = 'var(--neon-blue)';
+
+            let deck = shuffle([...emoticons, ...emoticons]);
+
+            deck.forEach(simbolo => {
+                const card = document.createElement('div');
+                card.classList.add('mem-card');
+                card.dataset.simbolo = simbolo;
+                
+                card.innerHTML = `
+                    <div class="mem-face mem-front"></div>
+                    <div class="mem-face mem-back">${simbolo}</div>
+                `;
+                
+                // Suporte Multi-touch rápido
+                card.addEventListener('pointerdown', virarCarta);
+                containerMemoria.appendChild(card);
+            });
+
+            clearInterval(memTimerInterval);
+            memTimerInterval = setInterval(atualizarTimer, 1000);
+        }
+
+        function virarCarta(e) {
+            const card = e.currentTarget;
+            if (card.classList.contains('flipped') || flippedCards.length >= 2) return;
+
+            triggerHaptic(15);
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) setTimeout(checarMatch, 500);
+        }
+
+        function checarMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.dataset.simbolo === c2.dataset.simbolo) {
+                // Acertou
+                matchedPairs++;
+                c1.style.opacity = '0.5'; c2.style.opacity = '0.5'; // Dim visualmente as prontas
+                triggerHaptic([30, 50, 30]);
+                if (matchedPairs === emoticons.length) {
+                    clearInterval(memTimerInterval);
+                    setTimeout(() => showWin("PRÊMIO MÁXIMO!"), 500);
+                }
+            } else {
+                // Errou
+                c1.classList.remove('flipped'); c2.classList.remove('flipped');
+                triggerHaptic(40); // Choque de erro
+            }
+            flippedCards = [];
+        }
+
+        function atualizarTimer() {
+            timeLeft--;
+            const pct = (timeLeft / tempoTotal) * 100;
+            timerFill.style.width = `${pct}%`;
             
-            document.getElementById('voucherNome').innerText = dados.produto;
-            document.getElementById('codGerado').innerText = dados.codigo;
-            document.getElementById('dataHora').innerText = dados.horaTexto;
-            
-            document.getElementById('ticketContainer').style.borderTopColor = dados.corPrincipal;
-            document.getElementById('codGerado').style.color = dados.corPrincipal;
-            
-            if(dados.isGold) {
-                document.body.style.backgroundColor = "#FFD700"; // Fundo Dourado se ganhou sorteio
-                document.getElementById('voucherNome').innerHTML = "🌟 " + dados.produto + " 🌟";
+            if (timeLeft <= 5) timerFill.style.backgroundColor = '#ef4444'; // Fica vermelho no final
+
+            if (timeLeft <= 0) {
+                clearInterval(memTimerInterval);
+                // Derrota (Tempo Esgotado)
+                document.querySelectorAll('.mem-card').forEach(c => c.classList.remove('flipped'));
+                showWin("TENTE NOVAMENTE!");
             }
         }
     </script>
 </body>
 </html>
-`;
-
-// --- ADMIN ---
-const htmlAdmin = `
-<!DOCTYPE html><html><meta name="viewport" content="width=device-width, initial-scale=1"><body style="font-family:Arial; padding:20px; background:#222; color:white;"><h1>Painel Admin</h1><div id="paineis"></div><script src="/socket.io/socket.io.js"></script><script>const socket=io();socket.on('dados_admin',(lista)=>{const div=document.getElementById('paineis');div.innerHTML="";lista.forEach((c,index)=>{div.innerHTML+=\`<div style="background:#444; padding:15px; margin-bottom:15px; border-radius:10px; border-left: 8px solid \${c.ativa?'#0f0':'#f00'}"><h3>\${c.nome}</h3>Estoque: <input id="qtd_\${index}" type="number" value="\${c.qtd}" style="width:60px;"> <button onclick="salvar(\${index})">Salvar</button></div>\`});});function salvar(id){const q=document.getElementById('qtd_'+id).value;socket.emit('admin_update',{id:id,qtd:q});alert('Salvo!');}</script></body></html>
-`;
-
-app.get('/tv', (req, res) => res.send(htmlTV));
-app.get('/admin', (req, res) => res.send(htmlAdmin));
-app.get('/mobile', (req, res) => res.send(htmlMobile));
-app.get('/', (req, res) => res.redirect('/tv'));
-app.get('/qrcode', (req, res) => { const url = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}/mobile`; QRCode.toDataURL(url, (e, s) => res.send(s)); });
-
-io.on('connection', (socket) => {
-    socket.emit('trocar_slide', campanhas[slideAtual]);
-    socket.emit('dados_admin', campanhas);
-    socket.on('pedir_atualizacao', () => { socket.emit('trocar_slide', campanhas[slideAtual]); });
-    
-    socket.on('resgatar_oferta', (id) => {
-        let camp = campanhas[id];
-        if (camp && camp.qtd > 0) {
-            
-            // --- SORTEIO DO COMBUSTÍVEL (SLIDE 0) ---
-            let nomeFinal = camp.nome;
-            let cor1 = camp.corPrincipal;
-            let cor2 = camp.corSecundaria;
-            let isGold = false;
-            let prefixo = camp.prefixo;
-
-            if (camp.ehSorteio) {
-                // Sorteio difícil (5% de chance)
-                const sorte = Math.floor(Math.random() * 100) + 1;
-                
-                if (sorte > 95) { 
-                    // GANHOU 50%
-                    isGold = true;
-                    camp.qtd--; // Desconta estoque real só do prêmio bom
-                    nomeFinal = "PARABÉNS! 50% DE DESCONTO";
-                    // Mantém dourado
-                } else {
-                    // PERDEU (GANHOU PRÊMIO CONSOLAÇÃO)
-                    cor1 = '#cccccc'; // Cinza
-                    cor2 = '#333333';
-                    nomeFinal = "Não foi dessa vez: Ganhou 2% OFF";
-                    prefixo = "DESC";
-                    // Não desconta estoque do prêmio bom
-                }
-            } else {
-                // Ducha e Café: Ganha sempre e desconta estoque
-                camp.qtd--;
-            }
-
-            io.emit('atualizar_qtd', camp);
-            if(slideAtual === id) io.emit('trocar_slide', camp);
-
-            socket.emit('sucesso', { 
-                codigo: gerarCodigo(prefixo), 
-                produto: nomeFinal,
-                corPrincipal: cor1,
-                corSecundaria: cor2,
-                isGold: isGold
-            });
-            io.emit('dados_admin', campanhas);
-        }
-    });
-
-    socket.on('admin_update', (d) => { 
-        campanhas[d.id].qtd = parseInt(d.qtd); 
-        io.emit('dados_admin', campanhas); 
-        if(slideAtual === d.id) io.emit('trocar_slide', campanhas[d.id]); 
-    });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`AMPM rodando na porta ${PORT}`));
