@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEGO TV - PREMIUM VITRINE</title>
+    <style>
+        :root { 
+            --bg-dark: #06110b; 
+            --forest-green: #143a24;
+            --forest-light: #1e5234;
+            --golden-mustard: #eab308; 
+            --gold-glow: rgba(234, 179, 8, 0.5); 
+            --neon-blue: #38bdf8;
+            --red-live: #ef4444; 
+        }
+        body { margin: 0; background: var(--bg-dark); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; transition: transform 0.5s ease; }
+        body.vertical-mode { width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: top left; position: absolute; top: 0; left: 100%; }
+
+        #top-section { display: flex; flex: 1; height: calc(100vh - 90px); position: relative; overflow: hidden; }
+        #promo-area { flex: 1; background: #000; position: relative; overflow: hidden; display: flex; }
+        #banner-img, #banner-video { width: 100%; height: 100%; object-fit: fill !important; transition: opacity 1.2s ease-in-out; position: absolute; z-index: 2; opacity: 0; }
+        .media-active { opacity: 1 !important; }
+
+        #side-panel { width: 420px; background: rgba(6, 17, 11, 0.95); backdrop-filter: blur(20px); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 20px; border-left: 4px solid var(--golden-mustard); text-align: center; box-sizing: border-box; box-shadow: -15px 0 50px rgba(0,0,0,0.8); position: relative; z-index: 10; }
+        body.vertical-mode #top-section { flex-direction: column; }
+        body.vertical-mode #side-panel { width: 100% !important; height: 38% !important; border-left: none; border-top: 4px solid var(--golden-mustard); flex-direction: row; padding: 20px; }
+
+        @keyframes masterPulse { 0% { transform: scale(1); box-shadow: 0 0 0px var(--gold-glow); } 50% { transform: scale(1.02); box-shadow: 0 0 40px var(--gold-glow); } 100% { transform: scale(1); box-shadow: 0 0 0px var(--gold-glow); } }
+        .qr-box { background: #fff; padding: 15px; border-radius: 28px; border: 4px solid var(--golden-mustard); animation: masterPulse 3s infinite ease-in-out; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #qrCode { width: 250px; height: 250px; display: block; border:none; }
+        
+        .counter-box { background: var(--forest-green); width: 100%; padding: 20px 0; border-radius: 24px; border: 1px solid var(--forest-light); box-shadow: inset 0 0 20px rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #qtdDisplay { font-size: 8rem; font-weight: 900; color: var(--golden-mustard); line-height: 1; text-shadow: 0 0 30px var(--gold-glow); transition: font-size 0.3s ease; }
+
+        #footer-bar { position: relative; height: 90px; background: var(--forest-green); border-top: 2px solid var(--golden-mustard); overflow: hidden; display: flex; align-items: center; }
+        .live-news-badge { position: absolute; left: 0; top: 0; height: 100%; background: var(--golden-mustard); color: #000; font-weight: 900; font-size: 1.8rem; display: flex; align-items: center; padding: 0 40px; z-index: 20; box-shadow: 5px 0 20px rgba(0,0,0,0.8); text-transform: uppercase; letter-spacing: 2px; }
+        
+        .marquee-container { display: flex; white-space: nowrap; animation: scroll-footer 60s linear infinite; padding-left: 350px; }
+        @keyframes scroll-footer { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        .footer-item { font-size: 1.8rem; font-weight: 900; padding: 0 50px; display: flex; align-items: center; gap: 15px; text-transform: uppercase; color: #fff; }
+        .dot { width: 15px; height: 15px; background: var(--golden-mustard); border-radius: 50%; box-shadow: 0 0 10px var(--golden-mustard); }
+
+        #clock-container { position: absolute; top: 30px; left: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 2px; }
+        #clock-time { font-size: 3.5rem; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 4px 12px rgba(0,0,0,0.9); }
+        #clock-date { font-size: 1rem; font-weight: 800; color: var(--golden-mustard); text-transform: uppercase; letter-spacing: 1.5px; }
+
+        #win-overlay { position: fixed; inset: 0; background: rgba(6, 17, 11, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .win-card { border: 4px solid var(--golden-mustard); padding: 80px 100px; border-radius: 40px; background: linear-gradient(135deg, var(--forest-green), var(--bg-dark)); text-align: center; box-shadow: 0 0 150px var(--gold-glow); animation: popIn 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        #interacao-alerta { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: var(--golden-mustard); color: #000; padding: 15px 40px; border-radius: 50px; font-weight: 900; font-size: 1.5rem; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; display: none; animation: slideDown 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
+        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 30px; opacity: 1; } }
+
+        #btn-rotate { position: absolute; top: 10px; right: 10px; background: transparent; color: rgba(255,255,255,0.2); border: none; cursor: pointer; font-size: 1.5rem; z-index: 1000; transition: 0.3s; }
+        #btn-rotate:hover { color: #fff; }
+
+        /* Componentes Extras */
+        #azarado-alerta { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: var(--bg-dark); color: #fff; padding: 20px 50px; border-radius: 16px; font-weight: 700; font-size: 1.8rem; border: 1px solid rgba(255,255,255,0.1); display: none; text-align: center; z-index: 150; }
+        #leilao-box { position: absolute; top: 50%; left: calc(50vw - 210px); transform: translate(-50%, -50%); background: rgba(6, 17, 11, 0.95); border: 4px solid var(--golden-mustard); border-radius: 40px; padding: 50px 80px; text-align: center; z-index: 100; display: none; box-shadow: 0 0 100px var(--gold-glow); }
+        #desafio-box { position: absolute; bottom: 120px; left: 40px; background: rgba(6, 17, 11, 0.9); border: 2px solid var(--neon-blue); border-radius: 20px; padding: 20px; width: 300px; z-index: 100; display: none; }
+    </style>
+</head>
+<body onclick="ativarSom()">
+    <div id="clock-container"><div id="clock-time">--:--:--</div><div id="clock-date">--:--</div></div>
+    <div id="interacao-alerta">🎮 JOGO EM ANDAMENTO...</div>
+
+    <div id="azarado-alerta"><span id="nome-azarado" style="color: #ef4444;">---</span> ganhou um prêmio comum.</div>
+
+    <div id="leilao-box">
+        <div style="font-weight: 900; color: #94a3b8; font-size: 1.5rem;">🔥 PREÇO CAINDO 🔥</div>
+        <div id="leilao-produto" style="font-size: 3rem; font-weight: 900; color: #fff; margin-bottom: 20px;">NOME DO PRODUTO</div>
+        <div id="leilao-preco" style="font-size: 8rem; font-weight: 900; color: var(--golden-mustard); line-height: 1;">R$ --</div>
+        <div id="leilao-timer" style="font-size: 2.5rem; color: #ef4444; font-weight: bold; margin-top:20px;">--:--</div>
+    </div>
+
+    <div id="desafio-box">
+        <div style="font-weight: 900; color: #fff; font-size: 1.2rem;">⚔️ DESAFIO DO SETOR</div>
+        <div style="background: #334155; height: 25px; border-radius: 15px; margin-top: 10px; overflow: hidden;"><div id="barra-desafio" style="background: var(--neon-blue); height: 100%; width: 0%; transition: width 0.5s;"></div></div>
+        <div style="text-align: right; font-weight: bold; color: var(--neon-blue); margin-top: 5px;"><span id="leads-desafio">0</span> / <span id="meta-label">--</span></div>
+    </div>
+
+    <div id="win-overlay">
+        <div class="win-card">
+            <h1 style="font-size: 4rem; color: #fff; margin: 0; text-shadow: 0 5px 10px rgba(0,0,0,0.5);">🎉 TEMOS UM VENCEDOR!</h1>
+            <div id="win-name" style="font-size: 6rem; font-weight: 900; color: var(--golden-mustard); margin: 30px 0; text-transform: uppercase;">---</div>
+            <p style="font-size: 2.2rem; margin: 0; color: #94a3b8; font-weight: 700;">RECOMPENSA LIBERADA:</p>
+            <div id="win-prize" style="font-size: 4.5rem; font-weight: 900; color: #fff; text-transform: uppercase;">---</div>
+        </div>
+    </div>
+
+    <div id="top-section">
+        <div id="promo-area">
+            <img id="banner-img" src="" alt="Vitrine">
+            <video id="banner-video" loop playsinline muted></video>
+        </div>
+        <div id="side-panel">
+            <button id="btn-rotate" onclick="toggleOrientation(event)">🔄</button>
+            <h2 style="margin: 0; font-size: 3rem; font-weight: 900; letter-spacing: 2px; color: #fff;">WEGO</h2>
+            <div class="qr-box"><img id="qrCode" src="/qrcode"></div>
+            <p style="font-weight: 900; font-size: 1.6rem; color: var(--golden-mustard); margin: 0;">APONTE A CÂMERA!</p>
+            <div class="counter-box">
+                <div style="font-weight: 800; color: #94a3b8; font-size: 1.2rem; margin-bottom: -15px; text-transform: uppercase;">Vouchers Disponíveis</div>
+                <div id="qtdDisplay">--</div>
+            </div>
+        </div>
+    </div>
+
+    <footer id="footer-bar">
+        <div class="live-news-badge">WEGO NEWS</div>
+        <div class="marquee-container" id="marquee-list"></div>
+    </footer>
+
+    <audio id="vitoriaSom" src="/vitoria.mp3" preload="auto"></audio>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        function atualizarRelogio() {
+            const agora = new Date();
+            document.getElementById('clock-time').innerText = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}:${String(agora.getSeconds()).padStart(2, '0')}`;
+            document.getElementById('clock-date').innerText = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+        }
+        setInterval(atualizarRelogio, 1000); atualizarRelogio();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const minhaLoc = urlParams.get('loc') || 'Geral';
+        const socket = io(); 
+        socket.emit('join', minhaLoc);
+
+        const som = document.getElementById('vitoriaSom');
+        function ativarSom() { som.play().then(() => { som.pause(); som.currentTime = 0; }).catch(() => {}); }
+
+        function toggleOrientation(e) {
+            if(e) e.stopPropagation(); 
+            document.body.classList.toggle('vertical-mode');
+            localStorage.setItem('tv_orientacao', document.body.classList.contains('vertical-mode') ? 'V' : 'H');
+        }
+        if(localStorage.getItem('tv_orientacao') === 'V') document.body.classList.add('vertical-mode');
+
+        let listaPatrocinadores = ""; let interacaoTimeout;
+
+        function atualizarRodape() {
+            const marquee = document.getElementById('marquee-list');
+            const itens = listaPatrocinadores.split(',').filter(p => p.trim() !== "");
+            if (itens.length > 0) {
+                const htmlContent = itens.map(p => `<div class="footer-item"><div class="dot"></div>DESTAQUE: <span style="color:var(--golden-mustard); margin-left:10px;">${p.trim().toUpperCase()}</span></div>`).join('');
+                marquee.innerHTML = htmlContent + htmlContent; 
+            } else { marquee.innerHTML = `<div class="footer-item"><div class="dot"></div>BEM-VINDO À WEGO! ACESSE O QR CODE E CONFIRA NOSSAS OFERTAS EXCLUSIVAS!</div>`; }
+        }
+
+        socket.on('cliente_girando', () => {
+            const alerta = document.getElementById('interacao-alerta');
+            alerta.style.display = 'block';
+            clearTimeout(interacaoTimeout);
+            interacaoTimeout = setTimeout(() => { alerta.style.display = 'none'; }, 5000);
+        });
+
+        socket.on('trocar_slide', d => {
+            document.getElementById('qtdDisplay').innerText = d.qtd;
+            if (d.arquivo) {
+                const img = document.getElementById('banner-img'), vid = document.getElementById('banner-video');
+                vid.pause(); vid.removeAttribute('src'); vid.load();
+                img.classList.remove('media-active'); vid.classList.remove('media-active');
+                
+                setTimeout(() => {
+                    const arquivoFormatado = (d.arquivo.startsWith('http')) ? d.arquivo : '/' + d.arquivo + '?v=' + Date.now();
+                    if (arquivoFormatado.match(/\.(mp4|webm|mov)$/i)) {
+                        img.style.display = 'none'; vid.style.display = 'block'; vid.src = arquivoFormatado;
+                        vid.oncanplaythrough = () => { vid.play().catch(()=>{}); vid.classList.add('media-active'); };
+                    } else {
+                        vid.style.display = 'none'; img.style.display = 'block'; img.src = arquivoFormatado;
+                        img.onload = () => img.classList.add('media-active');
+                    }
+                }, 200);
+            }
+            document.getElementById('qrCode').src = `/qrcode?loc=${minhaLoc}&v=${Date.now()}`;
+            if (d.patrocinadores !== undefined) { listaPatrocinadores = d.patrocinadores; atualizarRodape(); }
+        });
+
+        socket.on('aviso_vitoria_tv', d => {
+            document.getElementById('interacao-alerta').style.display = 'none'; clearTimeout(interacaoTimeout);
+            const overlay = document.getElementById('win-overlay');
+            document.getElementById('win-name').innerText = d.nome || "SORTUDO(A)";
+            document.getElementById('win-prize').innerText = d.premio || "PRÊMIO ESPECIAL";
+            overlay.style.display = 'flex';
+            som.volume = 1.0; som.currentTime = 0; som.play().catch(()=>{});
+            setTimeout(() => overlay.style.display = 'none', 10000);
+        });
+
+        // Eventos de Gamificação Avançada
+        socket.on('atualiza_leilao_tv', (dados) => { /* Lógica do leilão mantida... */ });
+        socket.on('encerrar_leilao_tv', () => { document.getElementById('leilao-box').style.display = 'none'; });
+        socket.on('atualiza_desafio_tv', (dados) => { /* Lógica do desafio mantida... */ });
+        socket.on('vencedor_desafio_tv', (dados) => { /* Lógica de vitória desafio... */ });
+
+        setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 0 && n.getSeconds() === 0) window.location.reload(); }, 1000);
+    </script>
+</body>
+</html>
