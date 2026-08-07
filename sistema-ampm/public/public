@@ -2,112 +2,183 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WEGO TV - PREMIUM VITRINE</title>
+    <title>WEGO TV - VITRINE PREMIUM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --bg-dark: #06110b; 
-            --forest-green: #143a24;
-            --forest-light: #1e5234;
-            --golden-mustard: #eab308; 
-            --gold-glow: rgba(234, 179, 8, 0.5); 
-            --neon-blue: #38bdf8;
-            --red-live: #ef4444; 
-        }
-        body { margin: 0; background: var(--bg-dark); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; transition: transform 0.5s ease; }
-        body.vertical-mode { width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: top left; position: absolute; top: 0; left: 100%; }
+        :root { --azul-dark: #020617; --azul-panel: #0f172a; --azul-neon: #38bdf8; --gold: #F59E0B; --gold-glow: rgba(245, 158, 11, 0.5); --red-live: #ef4444; }
+        body { margin: 0; background: var(--azul-dark); color: #fff; font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; transition: transform 0.5s ease; -webkit-font-smoothing: antialiased; }
+        body.vertical-mode { width: 100vh !important; height: 100vw !important; transform: rotate(90deg); transform-origin: top left; position: absolute; top: 0; left: 100%; }
 
         #top-section { display: flex; flex: 1; height: calc(100vh - 90px); position: relative; overflow: hidden; }
-        #promo-area { flex: 1; background: #000; position: relative; overflow: hidden; display: flex; }
-        #banner-img, #banner-video { width: 100%; height: 100%; object-fit: fill !important; transition: opacity 1.2s ease-in-out; position: absolute; z-index: 2; opacity: 0; }
-        .media-active { opacity: 1 !important; }
+        body.vertical-mode #top-section { flex-direction: column; height: calc(100% - 90px); }
 
-        #side-panel { width: 420px; background: rgba(6, 17, 11, 0.95); backdrop-filter: blur(20px); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 20px; border-left: 4px solid var(--golden-mustard); text-align: center; box-sizing: border-box; box-shadow: -15px 0 50px rgba(0,0,0,0.8); position: relative; z-index: 10; }
-        body.vertical-mode #top-section { flex-direction: column; }
-        body.vertical-mode #side-panel { width: 100% !important; height: 38% !important; border-left: none; border-top: 4px solid var(--golden-mustard); flex-direction: row; padding: 20px; }
+        #promo-area { flex: 1; background: var(--azul-dark); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        body.vertical-mode #promo-area { flex: none !important; height: 62vw !important; width: 100% !important; margin: 0 !important; }
+
+        /* CIRURGIA 1: Troca de 'contain' para 'cover' para preenchimento total da tela sem bordas pretas */
+        #banner-img, #banner-video, #banner-live { width: 100%; height: 100%; object-fit: cover !important; transition: opacity 0.5s ease-in-out; position: absolute; z-index: 2; opacity: 0; border: none; display: none; }
+        body.vertical-mode #banner-img, 
+        body.vertical-mode #banner-video,
+        body.vertical-mode #banner-live { width: 100% !important; height: 100% !important; object-fit: cover !important; transform: none !important; }
+        
+        .media-active { opacity: 1 !important; z-index: 3 !important; display: block !important; }
+
+        #side-panel { width: 420px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 20px; border-left: 4px solid var(--azul-neon); text-align: center; box-shadow: -15px 0 50px rgba(0,0,0,0.8); position: relative; z-index: 10; box-sizing: border-box; }
+        body.vertical-mode #side-panel { width: 100% !important; height: 38% !important; border-left: none; border-top: 4px solid var(--azul-neon); flex-direction: row; padding: 0 4vw !important; justify-content: space-between !important; align-items: center !important; background: linear-gradient(180deg, var(--azul-panel) 0%, var(--azul-dark) 100%) !important; }
+
+        body.vertical-mode .qr-section { display: flex; flex-direction: row !important; align-items: center !important; gap: 2vw !important; }
+        body.vertical-mode .qr-box { width: 26vh !important; height: 26vh !important; padding: 10px !important; }
+        body.vertical-mode #qrCode { width: 100% !important; height: 100% !important; }
 
         @keyframes masterPulse { 0% { transform: scale(1); box-shadow: 0 0 0px var(--gold-glow); } 50% { transform: scale(1.02); box-shadow: 0 0 40px var(--gold-glow); } 100% { transform: scale(1); box-shadow: 0 0 0px var(--gold-glow); } }
-        .qr-box { background: #fff; padding: 15px; border-radius: 28px; border: 4px solid var(--golden-mustard); animation: masterPulse 3s infinite ease-in-out; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #qrCode { width: 250px; height: 250px; display: block; border:none; }
-        
-        .counter-box { background: var(--forest-green); width: 100%; padding: 20px 0; border-radius: 24px; border: 1px solid var(--forest-light); box-shadow: inset 0 0 20px rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #qtdDisplay { font-size: 8rem; font-weight: 900; color: var(--golden-mustard); line-height: 1; text-shadow: 0 0 30px var(--gold-glow); transition: font-size 0.3s ease; }
+        .qr-box { background: #fff; padding: 15px; border-radius: 28px; border: 4px solid var(--azul-neon); animation: masterPulse 3s infinite ease-in-out; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #qrCode { width: 250px; height: 250px; display: block; border:none; object-fit: contain; }
 
-        #footer-bar { position: relative; height: 90px; background: var(--forest-green); border-top: 2px solid var(--golden-mustard); overflow: hidden; display: flex; align-items: center; }
-        .live-news-badge { position: absolute; left: 0; top: 0; height: 100%; background: var(--golden-mustard); color: #000; font-weight: 900; font-size: 1.8rem; display: flex; align-items: center; padding: 0 40px; z-index: 20; box-shadow: 5px 0 20px rgba(0,0,0,0.8); text-transform: uppercase; letter-spacing: 2px; }
-        
-        .marquee-container { display: flex; white-space: nowrap; animation: scroll-footer 60s linear infinite; padding-left: 350px; }
-        @keyframes scroll-footer { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-        .footer-item { font-size: 1.8rem; font-weight: 900; padding: 0 50px; display: flex; align-items: center; gap: 15px; text-transform: uppercase; color: #fff; }
-        .dot { width: 15px; height: 15px; background: var(--golden-mustard); border-radius: 50%; box-shadow: 0 0 10px var(--golden-mustard); }
+        /* --- CIRURGIA 2: BLINDAGEM DE SOBREPOSIÇÃO NO CONTADOR --- */
+        .counter-box { 
+            background: rgba(0,0,0,0.5); 
+            width: 100%; 
+            padding: 20px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            box-sizing: border-box; 
+            position: relative;
+        }
 
-        #clock-container { position: absolute; top: 30px; left: 40px; z-index: 1000; display: flex; flex-direction: column; gap: 2px; }
-        #clock-time { font-size: 3.5rem; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 4px 12px rgba(0,0,0,0.9); }
-        #clock-date { font-size: 1rem; font-weight: 800; color: var(--golden-mustard); text-transform: uppercase; letter-spacing: 1.5px; }
+        /* Anula o margin-bottom negativo do HTML raiz e centraliza a palavra */
+        .counter-box > div:first-child {
+            margin-bottom: 5px !important; 
+            font-size: clamp(0.9rem, 2vw, 1.2rem) !important;
+            line-height: 1.2 !important;
+            z-index: 2;
+        }
 
-        #win-overlay { position: fixed; inset: 0; background: rgba(6, 17, 11, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .win-card { border: 4px solid var(--golden-mustard); padding: 80px 100px; border-radius: 40px; background: linear-gradient(135deg, var(--forest-green), var(--bg-dark)); text-align: center; box-shadow: 0 0 150px var(--gold-glow); animation: popIn 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
+        #qtdDisplay { 
+            font-weight: 900; 
+            color: var(--gold); 
+            line-height: 1 !important; /* Ajuste para não encostar no título */
+            text-shadow: 0 0 30px var(--gold-glow); 
+            transition: all 0.3s ease; 
+            white-space: nowrap; 
+            max-width: 100%; 
+            font-size: clamp(4rem, 12vw, 7.5rem) !important; 
+            margin-top: 0;
+        }
+
+        body.vertical-mode .counter-box { 
+            width: auto !important; 
+            height: auto !important; 
+            padding: 2vh 4vw !important; 
+            overflow: visible !important; 
+        }
+
+        body.vertical-mode .counter-box > div:first-child {
+            margin-bottom: 1vh !important; 
+            font-size: clamp(1rem, 2vh, 1.5rem) !important;
+        }
+
+        body.vertical-mode #qtdDisplay { 
+            font-size: min(10vh, 22vw) !important; 
+            line-height: 1 !important; 
+        }
+        /* --- FIM DA BLINDAGEM --- */
+
+        #footer-bar { position: relative; height: 90px; background: #0f172a; border-top: 2px solid #334155; overflow: hidden; display: flex; align-items: center; }
+        .live-news-badge { position: absolute; left: 0; top: 0; height: 100%; background: var(--red-live); color: #fff; font-weight: 900; font-size: 1.8rem; display: flex; align-items: center; padding: 0 40px; z-index: 20; box-shadow: 5px 0 20px rgba(0,0,0,0.8); text-transform: uppercase; letter-spacing: 2px; }
+        @keyframes pulseLive { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .live-dot { width: 18px; height: 18px; background: #fff; border-radius: 50%; margin-right: 15px; animation: pulseLive 1.5s infinite; }
+        .marquee-container { display: flex; white-space: nowrap; animation: scroll-footer 40s linear infinite; padding-left: 350px; }
+        @keyframes scroll-footer { 0% { transform: translate3d(0,0,0); } 100% { transform: translate3d(-50%,0,0); } }
+        .footer-item { font-size: 1.8rem; font-weight: 900; padding: 0 50px; display: flex; align-items: center; gap: 15px; text-transform: uppercase; color: #cbd5e1; }
+        .dot { width: 15px; height: 15px; background: var(--azul-neon); border-radius: 50%; box-shadow: 0 0 10px var(--azul-neon); }
+
+        #clock-container { position: absolute; top: 30px; left: 40px; z-index: 1000; background: transparent; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+        #clock-time { font-size: 3.5rem; font-weight: 900; color: #fff; letter-spacing: 1px; line-height: 1; text-shadow: 0 4px 12px rgba(0, 0, 0, 0.95), 0 2px 4px rgba(0, 0, 0, 0.8); }
+        #clock-date { font-size: 1rem; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: 1.5px; text-shadow: 0 3px 8px rgba(0, 0, 0, 0.95); }
+
+        #win-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(15px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .win-card { border: 4px solid var(--gold); padding: 80px 100px; border-radius: 40px; background: linear-gradient(135deg, #0f172a, #020617); text-align: center; box-shadow: 0 0 150px var(--gold-glow), inset 0 0 50px rgba(245, 158, 11, 0.2); animation: popIn 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        #interacao-alerta { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: var(--golden-mustard); color: #000; padding: 15px 40px; border-radius: 50px; font-weight: 900; font-size: 1.5rem; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; display: none; animation: slideDown 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
-        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 30px; opacity: 1; } }
+        .flash-red { animation: flashEscassez 0.8s ease-in-out; }
+        @keyframes flashEscassez { 0% { transform: scale(1); } 50% { transform: scale(1.2); color: #ef4444; text-shadow: 0 0 40px rgba(239, 68, 68, 0.8); } 100% { transform: scale(1); } }
 
+        #interacao-alerta { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(245, 158, 11, 0.9); color: #000; padding: 15px 40px; border-radius: 50px; font-weight: 900; font-size: 1.5rem; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100; display: none; animation: slideDown 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49); }
+        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 30px; opacity: 1; } }
         #btn-rotate { position: absolute; top: 10px; right: 10px; background: transparent; color: rgba(255,255,255,0.2); border: none; cursor: pointer; font-size: 1.5rem; z-index: 1000; transition: 0.3s; }
         #btn-rotate:hover { color: #fff; }
 
-        /* Componentes Extras */
-        #azarado-alerta { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: var(--bg-dark); color: #fff; padding: 20px 50px; border-radius: 16px; font-weight: 700; font-size: 1.8rem; border: 1px solid rgba(255,255,255,0.1); display: none; text-align: center; z-index: 150; }
-        #leilao-box { position: absolute; top: 50%; left: calc(50vw - 210px); transform: translate(-50%, -50%); background: rgba(6, 17, 11, 0.95); border: 4px solid var(--golden-mustard); border-radius: 40px; padding: 50px 80px; text-align: center; z-index: 100; display: none; box-shadow: 0 0 100px var(--gold-glow); }
-        #desafio-box { position: absolute; bottom: 120px; left: 40px; background: rgba(6, 17, 11, 0.9); border: 2px solid var(--neon-blue); border-radius: 20px; padding: 20px; width: 300px; z-index: 100; display: none; }
+        /* GAMIFICAÇÃO WEGO */
+        #azarado-alerta { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); color: #fff; padding: 20px 50px; border-radius: 16px; font-weight: 700; font-size: 1.8rem; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1); z-index: 150; display: none; text-align: center; animation: slideUpTroll 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUpTroll { from { bottom: 0px; opacity: 0; transform: translate(-50%, 20px); } to { bottom: 120px; opacity: 1; transform: translate(-50%, 0); } }
+        .troll-highlight { color: #ef4444; font-weight: 900; text-transform: uppercase; }
+
+        #leilao-box { position: absolute; top: 50%; left: calc(50vw - 210px); transform: translate(-50%, -50%); background: rgba(2, 6, 23, 0.95); border: 4px solid var(--gold); border-radius: 40px; padding: 50px 80px; width: auto; min-width: 600px; text-align: center; z-index: 100; display: none; box-shadow: 0 0 100px rgba(245, 158, 11, 0.6), inset 0 0 30px rgba(245, 158, 11, 0.2); animation: pulseLeilao 2s infinite; }
+        @keyframes pulseLeilao { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
+        #leilao-produto { font-size: 3rem; font-weight: 900; color: #fff; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 5px 10px rgba(0,0,0,0.8); }
+        #leilao-preco { font-size: 8rem; font-weight: 900; color: var(--gold); line-height: 1; text-shadow: 0 0 40px var(--gold-glow); margin: 20px 0; }
+        #leilao-timer { font-size: 2.5rem; color: #ef4444; font-weight: bold; background: rgba(239, 68, 68, 0.1); padding: 10px 30px; border-radius: 20px; border: 2px dashed #ef4444; display: inline-block; }
+
+        #desafio-box { position: absolute; bottom: 120px; left: 40px; background: rgba(2, 6, 23, 0.9); border: 2px solid #22c55e; border-radius: 20px; padding: 20px; width: 300px; z-index: 100; display: none; box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); }
+        .progress-bg { background: #334155; height: 25px; border-radius: 15px; overflow: hidden; margin-top: 10px; position: relative; }
+        .progress-fill { background: linear-gradient(90deg, #22c55e, #10b981); height: 100%; width: 0%; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body onclick="ativarSom()">
     <div id="clock-container"><div id="clock-time">--:--:--</div><div id="clock-date">--:--</div></div>
-    <div id="interacao-alerta">🎮 JOGO EM ANDAMENTO...</div>
+    <div id="interacao-alerta">👀 ALGUÉM ESTÁ TENTANDO A SORTE...</div>
 
-    <div id="azarado-alerta"><span id="nome-azarado" style="color: #ef4444;">---</span> ganhou um prêmio comum.</div>
+    <div id="azarado-alerta"><span id="nome-azarado" class="troll-highlight">---</span> ganhou um prêmio comum.<br><span style="font-size: 1.2rem; color: #94a3b8;">A mesa vai deixar barato ou alguém vai quebrar a maldição? 👀</span></div>
 
     <div id="leilao-box">
-        <div style="font-weight: 900; color: #94a3b8; font-size: 1.5rem;">🔥 PREÇO CAINDO 🔥</div>
-        <div id="leilao-produto" style="font-size: 3rem; font-weight: 900; color: #fff; margin-bottom: 20px;">NOME DO PRODUTO</div>
-        <div id="leilao-preco" style="font-size: 8rem; font-weight: 900; color: var(--golden-mustard); line-height: 1;">R$ --</div>
-        <div id="leilao-timer" style="font-size: 2.5rem; color: #ef4444; font-weight: bold; margin-top:20px;">--:--</div>
+        <div style="font-weight: 900; color: #94a3b8; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 5px;">🔥 PREÇO CAINDO 🔥</div>
+        <div id="leilao-produto">NOME DO PRODUTO</div>
+        <div id="leilao-preco">R$ --</div>
+        <div id="leilao-timer">--:--</div>
     </div>
 
     <div id="desafio-box">
-        <div style="font-weight: 900; color: #fff; font-size: 1.2rem;">⚔️ DESAFIO DO SETOR</div>
-        <div style="background: #334155; height: 25px; border-radius: 15px; margin-top: 10px; overflow: hidden;"><div id="barra-desafio" style="background: var(--neon-blue); height: 100%; width: 0%; transition: width 0.5s;"></div></div>
-        <div style="text-align: right; font-weight: bold; color: var(--neon-blue); margin-top: 5px;"><span id="leads-desafio">0</span> / <span id="meta-label">--</span></div>
+        <div style="font-weight: 900; color: #fff; font-size: 1.2rem; text-transform: uppercase;">⚔️ DESAFIO DE MESA</div>
+        <div style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">Atingir <span id="meta-desafio">--</span> cupons para o BRINDE!</div>
+        <div class="progress-bg"><div id="barra-desafio" class="progress-fill"></div></div>
+        <div style="text-align: right; font-weight: bold; color: #22c55e; margin-top: 5px;"><span id="leads-desafio">0</span> / <span id="meta-label">--</span></div>
     </div>
 
     <div id="win-overlay">
         <div class="win-card">
-            <h1 style="font-size: 4rem; color: #fff; margin: 0; text-shadow: 0 5px 10px rgba(0,0,0,0.5);">🎉 TEMOS UM VENCEDOR!</h1>
-            <div id="win-name" style="font-size: 6rem; font-weight: 900; color: var(--golden-mustard); margin: 30px 0; text-transform: uppercase;">---</div>
-            <p style="font-size: 2.2rem; margin: 0; color: #94a3b8; font-weight: 700;">RECOMPENSA LIBERADA:</p>
-            <div id="win-prize" style="font-size: 4.5rem; font-weight: 900; color: #fff; text-transform: uppercase;">---</div>
+            <h1 style="font-size: 4rem; color: #fff; margin: 0; text-shadow: 0 5px 10px rgba(0,0,0,0.5);">🎉 SAIU MAIS UM GANHADOR!</h1>
+            <div id="win-name" style="font-size: 6rem; font-weight: 900; color: var(--gold); margin: 30px 0; text-transform: uppercase; text-shadow: 0 0 30px var(--gold-glow);">---</div>
+            <p style="font-size: 2.2rem; margin: 0; color: #94a3b8; font-weight: 700;">PRÊMIO LIBERADO:</p>
+            <div id="win-prize" style="font-size: 4.5rem; font-weight: 900; color: var(--azul-neon); text-transform: uppercase; text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);">---</div>
         </div>
     </div>
 
     <div id="top-section">
         <div id="promo-area">
-            <img id="banner-img" src="" alt="Vitrine">
+            <img id="banner-img" src="" alt="Slogan">
             <video id="banner-video" loop playsinline muted></video>
+            <iframe id="banner-live" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
         </div>
         <div id="side-panel">
-            <button id="btn-rotate" onclick="toggleOrientation(event)">🔄</button>
-            <h2 style="margin: 0; font-size: 3rem; font-weight: 900; letter-spacing: 2px; color: #fff;">WEGO</h2>
-            <div class="qr-box"><img id="qrCode" src="/qrcode"></div>
-            <p style="font-weight: 900; font-size: 1.6rem; color: var(--golden-mustard); margin: 0;">APONTE A CÂMERA!</p>
+            <div class="qr-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: inherit; width: 100%;">
+                <button id="btn-rotate" onclick="toggleOrientation(event)">🔄</button>
+                <h2 style="margin: 0 0 10px 0; font-size: 3rem; font-weight: 900; letter-spacing: 2px; color: #fff;">WEGO</h2>
+                <div class="qr-box"><img id="qrCode" src="/qrcode"></div>
+                <p style="font-weight: 900; font-size: 1.6rem; color: var(--azul-neon); margin: 15px 0 0 0;">ESCANEIE E GANHE!</p>
+            </div>
             <div class="counter-box">
-                <div style="font-weight: 800; color: #94a3b8; font-size: 1.2rem; margin-bottom: -15px; text-transform: uppercase;">Vouchers Disponíveis</div>
+                <div style="font-weight: 800; color: #94a3b8; font-size: 1.2rem; margin-bottom: -15px; text-transform: uppercase;">Estoque Limitado</div>
                 <div id="qtdDisplay">--</div>
             </div>
         </div>
     </div>
 
     <footer id="footer-bar">
-        <div class="live-news-badge">WEGO NEWS</div>
+        <div class="live-news-badge"><div class="live-dot"></div> WEGO NEWS</div>
         <div class="marquee-container" id="marquee-list"></div>
     </footer>
 
@@ -117,32 +188,56 @@
         function atualizarRelogio() {
             const agora = new Date();
             document.getElementById('clock-time').innerText = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}:${String(agora.getSeconds()).padStart(2, '0')}`;
-            document.getElementById('clock-date').innerText = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+            let dataPorExtenso = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+            document.getElementById('clock-date').innerText = dataPorExtenso.toUpperCase().replace('-FEIRA', '-FEIRA,');
         }
         setInterval(atualizarRelogio, 1000); atualizarRelogio();
 
         const urlParams = new URLSearchParams(window.location.search);
         const minhaLoc = urlParams.get('loc') || 'Geral';
-        const socket = io(); 
+        const socket = io({ transports: ['websocket'], reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity }); 
         socket.emit('join', minhaLoc);
 
+        function extrairYoutubeId(url) {
+            if (!url) return null;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = url.match(regExp);
+            return match ? match[1] : null;
+        }
+
         const som = document.getElementById('vitoriaSom');
-        function ativarSom() { som.play().then(() => { som.pause(); som.currentTime = 0; }).catch(() => {}); }
+        function activarSom() { 
+            som.play().then(() => { som.pause(); som.currentTime = 0; }).catch(() => {}); 
+            const live = document.getElementById('banner-live');
+            if (live && live.src) {
+                live.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                live.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[100]}', '*');
+            }
+        }
+        function ativarSom() { activarSom(); }
 
         function toggleOrientation(e) {
             if(e) e.stopPropagation(); 
             document.body.classList.toggle('vertical-mode');
-            localStorage.setItem('tv_orientacao', document.body.classList.contains('vertical-mode') ? 'V' : 'H');
+            const isVertical = document.body.classList.contains('vertical-mode');
+            localStorage.setItem('tv_orientacao', isVertical ? 'V' : 'H');
+            
+            if (window.currentSlideOrientacao) {
+                const fitMode = (window.currentSlideOrientacao === (isVertical ? 'V' : 'H')) ? 'cover' : 'contain';
+                document.getElementById('banner-img').style.setProperty('object-fit', fitMode, 'important');
+                document.getElementById('banner-video').style.setProperty('object-fit', fitMode, 'important');
+                document.getElementById('banner-live').style.setProperty('object-fit', fitMode, 'important');
+            }
         }
         if(localStorage.getItem('tv_orientacao') === 'V') document.body.classList.add('vertical-mode');
 
-        let listaPatrocinadores = ""; let interacaoTimeout;
+        let listaPatrocinadores = ""; let tempoImagemTimer = null; let interacaoTimeout;
 
         function atualizarRodape() {
             const marquee = document.getElementById('marquee-list');
             const itens = listaPatrocinadores.split(',').filter(p => p.trim() !== "");
             if (itens.length > 0) {
-                const htmlContent = itens.map(p => `<div class="footer-item"><div class="dot"></div>DESTAQUE: <span style="color:var(--golden-mustard); margin-left:10px;">${p.trim().toUpperCase()}</span></div>`).join('');
+                const htmlContent = itens.map(p => `<div class="footer-item"><div class="dot"></div>DESTAQUE: <span style="color:var(--azul-neon); margin-left:10px;">${p.trim().toUpperCase()}</span></div>`).join('');
                 marquee.innerHTML = htmlContent + htmlContent; 
             } else { marquee.innerHTML = `<div class="footer-item"><div class="dot"></div>BEM-VINDO À WEGO! ACESSE O QR CODE E CONFIRA NOSSAS OFERTAS EXCLUSIVAS!</div>`; }
         }
@@ -151,48 +246,147 @@
             const alerta = document.getElementById('interacao-alerta');
             alerta.style.display = 'block';
             clearTimeout(interacaoTimeout);
-            interacaoTimeout = setTimeout(() => { alerta.style.display = 'none'; }, 5000);
+            interacaoTimeout = setTimeout(() => { alerta.style.display = 'none'; }, 4000);
         });
 
         socket.on('trocar_slide', d => {
-            document.getElementById('qtdDisplay').innerText = d.qtd;
+            window.currentSlideOrientacao = d.orientacao || 'H';
+            const tvMode = document.body.classList.contains('vertical-mode') ? 'V' : 'H';
+            const fitMode = (window.currentSlideOrientacao === tvMode) ? 'cover' : 'contain';
+            
+            const img = document.getElementById('banner-img');
+            const vid = document.getElementById('banner-video');
+            const live = document.getElementById('banner-live');
+            
+            img.style.setProperty('object-fit', fitMode, 'important');
+            vid.style.setProperty('object-fit', fitMode, 'important');
+            live.style.setProperty('object-fit', fitMode, 'important');
+
+            const displayQtd = document.getElementById('qtdDisplay');
+            displayQtd.style.fontSize = d.qtd > 999 ? '5.5rem' : '8rem';
+            if (displayQtd.innerText !== "--" && parseInt(displayQtd.innerText) > d.qtd) {
+                displayQtd.classList.remove('flash-red'); void displayQtd.offsetWidth; displayQtd.classList.add('flash-red');
+            }
+            displayQtd.innerText = d.qtd;
+
             if (d.arquivo) {
-                const img = document.getElementById('banner-img'), vid = document.getElementById('banner-video');
-                vid.pause(); vid.removeAttribute('src'); vid.load();
-                img.classList.remove('media-active'); vid.classList.remove('media-active');
+                if (tempoImagemTimer) clearTimeout(tempoImagemTimer);
                 
                 setTimeout(() => {
+                    const ytId = extrairYoutubeId(d.arquivo);
                     const arquivoFormatado = (d.arquivo.startsWith('http')) ? d.arquivo : '/' + d.arquivo + '?v=' + Date.now();
-                    if (arquivoFormatado.match(/\.(mp4|webm|mov)$/i)) {
-                        img.style.display = 'none'; vid.style.display = 'block'; vid.src = arquivoFormatado;
-                        vid.oncanplaythrough = () => { vid.play().catch(()=>{}); vid.classList.add('media-active'); };
-                    } else {
-                        vid.style.display = 'none'; img.style.display = 'block'; img.src = arquivoFormatado;
-                        img.onload = () => img.classList.add('media-active');
+                    
+                    if (ytId) {
+                        vid.pause();
+                        img.classList.remove('media-active'); 
+                        vid.classList.remove('media-active'); 
+                        
+                        img.style.display = 'none';
+                        vid.style.display = 'none';
+                        live.style.display = 'block';
+                        
+                        const originUrl = window.location.origin;
+                        const urlEsperada = `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&rel=0&enablejsapi=1&origin=${originUrl}`;
+                        
+                        if (live.src !== urlEsperada) {
+                            live.src = urlEsperada;
+                        }
+                        live.classList.add('media-active');
                     }
-                }, 200);
+                    else if (arquivoFormatado.match(/\.(mp4|webm|mov)$/i)) {
+                        live.src = ""; live.style.display = 'none'; live.classList.remove('media-active');
+                        img.style.display = 'none'; vid.style.display = 'block'; 
+                        
+                        vid.src = arquivoFormatado;
+                        vid.oncanplaythrough = () => { vid.play().catch(()=>{}); vid.classList.add('media-active'); };
+                        vid.onended = () => socket.emit('solicitar_proximo_anuncio', { loja: minhaLoc });
+                        vid.onerror = () => { tempoImagemTimer = setTimeout(() => socket.emit('solicitar_proximo_anuncio', { loja: minhaLoc }), 10000); };
+                    } 
+                    else {
+                        live.src = ""; live.style.display = 'none'; live.classList.remove('media-active');
+                        vid.pause(); vid.style.display = 'none'; vid.classList.remove('media-active'); 
+                        img.style.display = 'block'; 
+                        
+                        img.src = arquivoFormatado;
+                        img.onload = () => { img.classList.add('media-active'); tempoImagemTimer = setTimeout(() => socket.emit('solicitar_proximo_anuncio', { loja: minhaLoc }), 15000); };
+                    }
+                }, 100);
             }
             document.getElementById('qrCode').src = `/qrcode?loc=${minhaLoc}&v=${Date.now()}`;
             if (d.patrocinadores !== undefined) { listaPatrocinadores = d.patrocinadores; atualizarRodape(); }
         });
 
         socket.on('aviso_vitoria_tv', d => {
+            if (d.status === 'Emitido') return; 
             document.getElementById('interacao-alerta').style.display = 'none'; clearTimeout(interacaoTimeout);
             const overlay = document.getElementById('win-overlay');
             document.getElementById('win-name').innerText = d.nome || "SORTUDO(A)";
             document.getElementById('win-prize').innerText = d.premio || "PRÊMIO ESPECIAL";
             overlay.style.display = 'flex';
-            som.volume = 1.0; som.currentTime = 0; som.play().catch(()=>{});
-            setTimeout(() => overlay.style.display = 'none', 10000);
+            som.volume = 1.0; som.currentTime = 0; som.play().catch(e => console.log("Clique na TV para liberar o som!"));
+            const marquee = document.getElementById('marquee-list');
+            marquee.innerHTML = `<div class="footer-item" style="color:var(--gold);"><div class="dot" style="background:var(--gold); box-shadow: 0 0 10px var(--gold);"></div>🔥 ACABOU DE GANHAR: ${d.nome} (${d.premio})</div>` + marquee.innerHTML;
+            setTimeout(() => { overlay.style.display = 'none'; }, 10000);
         });
 
-        // Eventos de Gamificação Avançada
-        socket.on('atualiza_leilao_tv', (dados) => { /* Lógica do leilão mantida... */ });
-        socket.on('encerrar_leilao_tv', () => { document.getElementById('leilao-box').style.display = 'none'; });
-        socket.on('atualiza_desafio_tv', (dados) => { /* Lógica do desafio mantida... */ });
-        socket.on('vencedor_desafio_tv', (dados) => { /* Lógica de vitória desafio... */ });
+        let azaradoTimeout;
+        socket.on('aviso_azarado_tv', (dados) => {
+            const alertaTroll = document.getElementById('azarado-alerta');
+            document.getElementById('nome-azarado').innerText = dados.nome.split(' ')[0];
+            alertaTroll.style.display = 'block';
+            clearTimeout(azaradoTimeout); azaradoTimeout = setTimeout(() => { alertaTroll.style.display = 'none'; }, 6000);
+        });
+
+        socket.on('aviso_fantasma_tv', (dados) => {
+            const overlay = document.getElementById('win-overlay');
+            const card = overlay.querySelector('.win-card');
+            card.style.borderColor = "#c084fc"; card.style.boxShadow = "0 0 150px rgba(192, 132, 252, 0.5)";
+            document.getElementById('win-name').innerText = dados.nome; document.getElementById('win-name').style.color = "#c084fc";
+            document.getElementById('win-prize').innerText = "👻 O FANTASMA LIBEROU: " + dados.premio; document.getElementById('win-prize').style.color = "#fff";
+            overlay.style.display = 'flex'; som.play().catch(()=>{});
+            setTimeout(() => { 
+                overlay.style.display = 'none'; card.style.borderColor = "var(--gold)"; card.style.boxShadow = "0 0 150px var(--gold-glow)";
+                document.getElementById('win-name').style.color = "var(--gold)"; document.getElementById('win-prize').style.color = "var(--azul-neon)";
+            }, 10000);
+        });
+
+        let leilaoInterval;
+        socket.on('atualiza_leilao_tv', (dados) => {
+            const box = document.getElementById('leilao-box'); box.style.display = 'block';
+            document.getElementById('leilao-produto').innerText = dados.produto || "PROMOÇÃO ESPECIAL";
+            document.getElementById('leilao-preco').innerText = `R$ ${dados.preco},00`;
+            clearInterval(leilaoInterval);
+            if (dados.fim) {
+                const endTime = new Date(dados.fim).getTime();
+                leilaoInterval = setInterval(() => {
+                    const distance = endTime - new Date().getTime();
+                    if (distance <= 0) {
+                        clearInterval(leilaoInterval); document.getElementById('leilao-timer').innerText = "ESGOTADO!"; setTimeout(() => box.style.display = 'none', 4000);
+                    } else {
+                        document.getElementById('leilao-timer').innerText = `${String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2,'0')}:${String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2,'0')}`;
+                    }
+                }, 1000);
+            }
+        });
+
+        socket.on('encerrar_leilao_tv', () => { clearInterval(leilaoInterval); document.getElementById('leilao-box').style.display = 'none'; });
+
+        socket.on('atualiza_desafio_tv', (dados) => {
+            const box = document.getElementById('desafio-box'); box.style.display = 'block';
+            document.getElementById('meta-desafio').innerText = dados.meta; document.getElementById('meta-label').innerText = dados.meta; document.getElementById('leads-desafio').innerText = dados.leads;
+            document.getElementById('barra-desafio').style.width = `${Math.min((dados.leads / dados.meta) * 100, 100)}%`;
+        });
+
+        socket.on('vencedor_desafio_tv', (dados) => {
+            const overlay = document.getElementById('win-overlay');
+            document.getElementById('win-name').innerText = `O SETOR ${dados.setor.replace('_', ' ')}`;
+            document.getElementById('win-prize').innerText = `🏆 GANHOU: ${dados.premio}`;
+            overlay.style.display = 'flex'; som.play().catch(()=>{});
+            setTimeout(() => { overlay.style.display = 'none'; document.getElementById('desafio-box').style.display = 'none'; }, 10000);
+        });
 
         setInterval(() => { const n = new Date(); if (n.getHours() === 3 && n.getMinutes() === 0 && n.getSeconds() === 0) window.location.reload(); }, 1000);
+        socket.on('reconnect', () => socket.emit('join', minhaLoc));
     </script>
 </body>
 </html>
